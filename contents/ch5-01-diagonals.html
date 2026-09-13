@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대각선 탐험대 — 다각형의 대각선의 개수</title>
+<link rel="stylesheet" href="../assets/common.css?v=4">
+<script src="../assets/common.js?v=4" data-home="../index.html?unit=5" defer></script>
+<script src="../assets/track.js?v=4" defer></script>
+<style>
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{font-family:var(--font); background:var(--bg); color:var(--ink); overflow:hidden;}
+  #app{height:100%; display:flex; flex-direction:column;}
+
+  header{
+    display:flex; align-items:center; gap:16px; padding:0 16px; height:52px; flex:none;
+    background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  header h1{font-size:17px; font-weight:800; white-space:nowrap;}
+  header nav{display:flex; gap:5px;}
+  header nav button{
+    font:600 14px/1 var(--font); padding:8px 12px; border-radius:9px;
+    border:1px solid transparent; background:none; color:var(--sub); cursor:pointer; white-space:nowrap;
+  }
+  header nav button:hover{background:var(--accent-soft); color:var(--accent);}
+  header nav button.on{background:var(--accent-soft); color:var(--accent); border-color:#c7d3f7;}
+
+  main{flex:1; min-height:0; padding:12px; display:grid; grid-template-columns:1fr 350px; gap:12px;}
+  .board-wrap{
+    position:relative; min-width:0;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  #board{width:100%; height:100%; display:block; touch-action:none;}
+  #tip{
+    position:absolute; right:12px; bottom:11px; pointer-events:none;
+    font-size:12.5px; font-weight:600; color:var(--sub);
+    background:#f7f9fdd9; padding:6px 12px; border-radius:999px; border:1px solid var(--line);
+  }
+  #tip:empty{display:none;}
+
+  aside{min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:10px;}
+  .blk{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:13px 14px;}
+  .blk h2{font-size:14px; font-weight:800; margin-bottom:9px; display:flex; align-items:center; gap:6px;}
+  .blk h2 .tag{font-size:11px; font-weight:700; color:#fff; background:var(--accent); padding:3px 8px; border-radius:6px;}
+  .blk p{font-size:13.5px; line-height:1.65; color:var(--sub);}
+  .blk p b{color:var(--ink);}
+
+  .row{display:flex; flex-wrap:wrap; gap:6px;}
+  .btn{
+    font:600 14px/1 var(--font); padding:9px 13px; border-radius:9px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer; transition:.14s;
+  }
+  .btn:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn.primary:hover{background:var(--accent-dark); color:#fff;}
+  .btn.sm{padding:7px 10px; font-size:13px;}
+
+  .slider{margin-top:11px;}
+  .slider label{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:700; margin-bottom:5px;}
+  .slider label .v{color:var(--accent); font-size:14px;}
+  input[type=range]{width:100%; accent-color:var(--accent);}
+
+  .fb{font-size:13.5px; font-weight:600; line-height:1.6; padding:9px 11px; border-radius:9px; margin-top:9px;}
+  .fb.ok{background:var(--ok-soft); color:var(--ok);}
+  .fb.no{background:var(--no-soft); color:var(--no);}
+  .fb.info{background:var(--accent-soft); color:var(--accent-dark);}
+  .fb.warn{background:var(--warn-soft); color:#a75c00;}
+
+  /* 세는 판 : 중복 포함 / 서로 다른 대각선 */
+  .counts{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .cnt{background:#f7f9fd; border:1px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center;}
+  .cnt .v{font-size:23px; font-weight:800; line-height:1.1;}
+  .cnt .l{font-size:11px; color:var(--sub); margin-top:4px; line-height:1.35;}
+  .cnt.dup .v{color:var(--no);}
+  .cnt.uniq .v{color:var(--ok);}
+
+  .formula{
+    margin-top:10px; text-align:center; font-size:15px; font-weight:700; color:var(--ink);
+    background:#f7f9fd; border:1px solid var(--line); border-radius:10px; padding:11px 8px; line-height:1.9;
+  }
+  .formula .frac{display:inline-block; vertical-align:middle; text-align:center; margin:0 3px;}
+  .formula .frac .top{display:block; border-bottom:2px solid var(--ink); padding:0 7px;}
+  .formula .frac .bot{display:block; padding:0 7px;}
+  .it{font-family:'Times New Roman',serif; font-style:italic; font-weight:700;}
+
+  /* 표 채우기 */
+  table.fill{width:100%; border-collapse:collapse; margin-top:8px; font-size:13px;}
+  table.fill th, table.fill td{border:1px solid var(--line); padding:7px 5px; text-align:center;}
+  table.fill th{background:#f7f9fd; font-weight:700; font-size:12.5px; color:var(--sub);}
+  table.fill input{
+    width:52px; font:700 15px var(--font); padding:6px 2px; text-align:center;
+    border:1px solid var(--line); border-radius:7px;
+  }
+  table.fill input.good{border-color:var(--ok); background:var(--ok-soft); color:var(--ok);}
+  table.fill input.bad {border-color:var(--no); background:var(--no-soft); color:var(--no);}
+
+  .ansrow{display:flex; align-items:center; gap:8px; margin-top:10px;}
+  .ansrow input{
+    width:110px; font:700 17px var(--font); padding:9px 10px;
+    border:1px solid var(--line); border-radius:9px; text-align:center;
+  }
+  .ansrow input.good{border-color:var(--ok); background:var(--ok-soft); color:var(--ok);}
+  .ansrow input.bad {border-color:var(--no); background:var(--no-soft); color:var(--no);}
+
+  .scoreboard{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;}
+  .sc{background:#f7f9fd; border:1px solid var(--line); border-radius:10px; padding:9px 6px; text-align:center;}
+  .sc .v{font-size:21px; font-weight:800; line-height:1.1;}
+  .sc .l{font-size:11px; color:var(--sub); margin-top:3px;}
+  .sc.ok .v{color:var(--ok);}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:900px){
+    body{overflow:auto;}
+    #app{height:auto; min-height:100%;}
+    main{grid-template-columns:1fr; height:auto;}
+    .board-wrap{height:50vh; min-height:320px;}
+    header{flex-wrap:wrap; height:auto; padding:8px 12px; gap:10px;}
+    header nav{order:3; width:100%;}
+    header nav button{flex:1; padding:8px 4px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <h1>📐 대각선 탐험대</h1>
+  <nav>
+    <button class="on" data-tab="explore">① 대각선 그어 보기</button>
+    <button data-tab="table">② 표 채우기</button>
+    <button data-tab="quiz">③ 개수 맞히기</button>
+  </nav>
+  <a class="home-btn" href="../index.html?unit=5">← 목차</a>
+</header>
+
+<main>
+  <div class="board-wrap">
+    <canvas id="board"></canvas>
+    <div id="tip"></div>
+  </div>
+
+  <aside>
+    <!-- ① 탐구 -->
+    <section id="pExplore">
+      <div class="blk">
+        <h2><span class="tag">활동 1</span> 두 꼭짓점을 눌러 대각선을 그어요</h2>
+        <p>꼭짓점 <b>두 개</b>를 차례로 누르면 그 둘을 잇는 <b>대각선</b>이 그어져요.
+           같은 대각선을 <b>양쪽 끝에서 한 번씩</b> 그으면, 두 번째 선이 <b style="color:#e5484d">빨간색</b>으로
+           바로 옆에 나란히 붙어 <b>선이 두 개</b>가 돼요.</p>
+        <div class="slider">
+          <label><span>변의 개수 <span class="it">n</span></span><span class="v" id="vN">육각형 (n = 6)</span></label>
+          <input type="range" id="rN" min="3" max="12" step="1" value="6">
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary sm" id="btnAll">모든 꼭짓점에서 긋기</button>
+          <button class="btn sm" id="btnHalf">➗ 2로 나눠 보기</button>
+          <button class="btn sm" id="btnClear">↺ 지우기</button>
+        </div>
+        <div id="exploreFb"></div>
+      </div>
+
+      <div class="blk">
+        <h2>세어 보기</h2>
+        <div class="counts">
+          <div class="cnt dup"><div class="v" id="cDup">0</div><div class="l">그은 횟수<br>(화면에 그은 선)</div></div>
+          <div class="cnt uniq"><div class="v" id="cUniq">0</div><div class="l">실제로 생긴<br>서로 다른 대각선</div></div>
+        </div>
+        <div id="countFb"></div>
+      </div>
+
+      <div class="blk">
+        <h2>알게 된 것</h2>
+        <p>한 꼭짓점에서 그을 수 있는 대각선은 <b>(<span class="it">n</span> − 3)개</b>,
+           꼭짓점은 <b><span class="it">n</span>개</b>.
+           그런데 대각선 하나를 <b>두 번씩</b> 세었으므로 2로 나눠요. (교과서 179~180쪽)</p>
+        <div class="formula" id="formulaBox"></div>
+      </div>
+    </section>
+
+    <!-- ② 표 -->
+    <section id="pTable" class="hidden">
+      <div class="blk">
+        <h2><span class="tag">활동 2</span> 표를 채워 보세요</h2>
+        <p>왼쪽 그림은 사각형·오각형·육각형의 <b>한 꼭짓점</b>에서 그을 수 있는 대각선을 모두 나타낸 것이에요. (교과서 179쪽 문제 1)</p>
+        <table class="fill">
+          <tr><th>다각형</th><th>사각형</th><th>오각형</th><th>육각형</th></tr>
+          <tr>
+            <th>한 꼭짓점에서<br>그을 수 있는<br>대각선의 개수</th>
+            <td><input type="number" id="t4a" inputmode="numeric"></td>
+            <td><input type="number" id="t5a" inputmode="numeric"></td>
+            <td><input type="number" id="t6a" inputmode="numeric"></td>
+          </tr>
+          <tr>
+            <th>대각선의 개수</th>
+            <td><span style="font-size:12px;color:var(--sub)">4 × □ ÷ 2 =</span><br><input type="number" id="t4b" inputmode="numeric"></td>
+            <td><span style="font-size:12px;color:var(--sub)">5 × □ ÷ 2 =</span><br><input type="number" id="t5b" inputmode="numeric"></td>
+            <td><span style="font-size:12px;color:var(--sub)">6 × □ ÷ 2 =</span><br><input type="number" id="t6b" inputmode="numeric"></td>
+          </tr>
+        </table>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary" id="btnTable">✅ 확인</button>
+          <button class="btn sm" id="btnTableClear">↺ 다시</button>
+        </div>
+        <div id="tableFb"></div>
+      </div>
+    </section>
+
+    <!-- ③ 퀴즈 -->
+    <section id="pQuiz" class="hidden">
+      <div class="blk">
+        <h2><span class="tag">활동 3</span> 대각선의 개수 맞히기</h2>
+        <p id="ask"></p>
+        <div class="ansrow">
+          <input type="number" id="ansIn" placeholder="?" inputmode="numeric">
+          <span style="font-size:15px;font-weight:700;color:var(--sub);" id="unit">개</span>
+        </div>
+        <div id="quizFb"></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary" id="btnCheck">✅ 확인</button>
+          <button class="btn sm" id="btnNext">🔄 새 문제</button>
+          <button class="btn sm" id="btnHint">💡 힌트</button>
+        </div>
+        <div class="scoreboard">
+          <div class="sc"><div class="v" id="qTry">0</div><div class="l">푼 문제</div></div>
+          <div class="sc ok"><div class="v" id="qOk">0</div><div class="l">맞힘</div></div>
+          <div class="sc"><div class="v" id="qStreak">0</div><div class="l">연속</div></div>
+        </div>
+      </div>
+    </section>
+  </aside>
+</main>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+
+const DW = 900, DH = 600;
+const INK = "#1d2433", SUB = "#68738a";
+const BLUE = "#3e63dd", RED = "#e5484d", ORANGE = "#f5820b", OK = "#2f9e63";
+const rad = d => d*Math.PI/180;
+
+const NAMES = {3:"삼각형",4:"사각형",5:"오각형",6:"육각형",7:"칠각형",8:"팔각형",
+               9:"구각형",10:"십각형",11:"십일각형",12:"십이각형",13:"십삼각형",
+               14:"십사각형",15:"십오각형",20:"이십각형"};
+const nameOf = n => NAMES[n] || (n + "각형");
+const LETTERS = "ABCDEFGHIJKL";
+
+const cv = $("board"), ctx = cv.getContext("2d");
+function view(){
+  const W = cv.clientWidth, H = cv.clientHeight;
+  const s = Math.min(W/DW, H/DH);
+  return {s, ox:(W - DW*s)/2, oy:(H - DH*s)/2, W, H};
+}
+function toDesign(px, py){ const v = view(); return {x:(px - v.ox)/v.s, y:(py - v.oy)/v.s}; }
+
+function seg(a, b, color, w, dash){
+  ctx.save(); if(dash) ctx.setLineDash(dash);
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  ctx.restore();
+}
+function dot(P, color, r, filled){
+  ctx.fillStyle = filled ? color : "#fff";
+  ctx.strokeStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(P.x, P.y, r || 7, 0, 7); ctx.fill(); ctx.stroke();
+}
+function txt(t, x, y, color, size, halo){
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = "800 " + size + "px Pretendard, 'Malgun Gothic', sans-serif";
+  if(halo){ ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.lineJoin = "round"; ctx.strokeText(t, x, y); }
+  ctx.fillStyle = color; ctx.fillText(t, x, y);
+}
+function ital(t, x, y, color, size){
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = "italic 700 " + size + "px 'Times New Roman', serif";
+  ctx.fillStyle = color; ctx.fillText(t, x, y);
+}
+
+/* ============================================================
+   상태
+   ============================================================ */
+let tab = "explore";
+let n = 6;                 // 변의 개수
+let first = -1;            // 먼저 누른 꼭짓점 (-1 이면 고른 것 없음)
+/* 그은 대각선을 "출발점>도착점" 으로 기억한다.
+   같은 대각선이라도 A→C 와 C→A 는 서로 다른 '한 번'이라서
+   양쪽에서 그으면 화면에 선이 두 개로 보인다. */
+let draws = new Set();
+/* ÷2 장면 : mergeT 가 0~1 이면 애니메이션 진행 중, halved 는 끝난 상태 */
+let mergeT = -1, halved = false, mergeAnim = null;
+let Q = {n:0, kind:"forward", ans:0, done:false, showAll:false, tries:0, ok:0, streak:0};
+
+/* 꼭짓점 좌표 : 맨 위에서 시작해 시계 방향 */
+function verts(cnt, cx, cy, R){
+  const P = [];
+  for(let i = 0; i < cnt; i++){
+    const a = -90 + 360*i/cnt;
+    P.push({x:cx + Math.cos(rad(a))*R, y:cy + Math.sin(rad(a))*R});
+  }
+  return P;
+}
+const isAdj = (i, j, cnt) => { const d = Math.abs(i - j); return d === 1 || d === cnt - 1; };
+
+/* 그은 선들을 대각선별로 묶는다. key "i-j" (i<j) → 몇 번 그어졌나(1 또는 2) */
+function drawnMap(){
+  const m = new Map();
+  draws.forEach(function(s){
+    const p = s.split(">").map(Number);
+    const k = Math.min(p[0], p[1]) + "-" + Math.max(p[0], p[1]);
+    m.set(k, (m.get(k) || 0) + 1);
+  });
+  return m;
+}
+
+/* ============================================================
+   ① 탐구 그리기
+   ============================================================ */
+const EX_C = {x:430, y:300}, EX_R = 218;
+const SIDE = 6.5;   /* 두 번째로 그은 선을 옆에 나란히 붙여 놓는 거리 */
+
+function drawExplore(){
+  const P = verts(n, EX_C.x, EX_C.y, EX_R);
+
+  /* 먼저 그은 선은 **실제 대각선 자리 그대로**(파랑),
+     같은 대각선을 반대쪽 끝에서 또 그으면 그 옆에 나란히 붙여 그린다(빨강).
+     `draws` 는 Set 이라 넣은 차례가 그대로 유지되므로 먼저/나중을 그것으로 가른다. */
+  const seen = new Set(), blues = [], reds = [];
+  draws.forEach(function(s){
+    const p = s.split(">").map(Number);
+    const lo = Math.min(p[0], p[1]), hi = Math.max(p[0], p[1]);
+    const k = lo + "-" + hi;
+    if(!seen.has(k)){ seen.add(k); blues.push({a:p[0], b:p[1]}); }
+    else reds.push({a:p[0], b:p[1], lo:lo, hi:hi});
+  });
+
+  blues.forEach(function(d){ seg(P[d.a], P[d.b], BLUE, 3); });   /* 실제 대각선과 정확히 일치 */
+
+  /* 빨간 선 — ÷2 장면에서는 짝인 파란 선 위로 하나씩 미끄러져 들어가 사라진다 */
+  let alive = 0;
+  if(!halved){
+    const K = reds.length;
+    reds.forEach(function(d, i){
+      let u = 0;                                   /* 0 = 제자리, 1 = 다 겹쳐 사라짐 */
+      if(mergeT >= 0){
+        const st = K > 1 ? (i/K)*0.62 : 0;
+        u = Math.max(0, Math.min(1, (mergeT - st)/0.34));
+      }
+      if(u >= 1) return;
+      alive++;
+      /* 옆으로 민 방향은 그은 방향과 상관없이 늘 같은 쪽이어야 하므로
+         번호가 작은 꼭짓점 → 큰 꼭짓점 방향을 기준으로 잡는다. */
+      const dx = P[d.hi].x - P[d.lo].x, dy = P[d.hi].y - P[d.lo].y, L = Math.hypot(dx, dy) || 1;
+      const off = SIDE*(1 - u);
+      const nx = -dy/L*off, ny = dx/L*off;
+      ctx.save();
+      ctx.globalAlpha = u < 0.75 ? 1 : (1 - u)/0.25;
+      seg({x:P[d.a].x + nx, y:P[d.a].y + ny}, {x:P[d.b].x + nx, y:P[d.b].y + ny}, RED, 3);
+      ctx.restore();
+    });
+  }
+
+  /* ÷2 장면의 숫자 — 도형(최대 x ≈ 680)과 겹치지 않도록 오른쪽 빈 자리에 둔다 */
+  const INFO_X = 785;
+  if(mergeT >= 0){
+    txt("화면에 남은 선", INFO_X, 252, SUB, 18, true);
+    txt(String(blues.length + alive), INFO_X, 296, INK, 40, true);
+    txt("겹친 선을 걷어 내는 중", INFO_X, 336, SUB, 15, true);
+  }else if(halved){
+    const dup = draws.size;
+    txt(dup + " ÷ 2", INFO_X, 246, INK, 27, true);
+    txt("= " + blues.length, INFO_X, 288, OK, 34, true);
+    txt("실제 대각선", INFO_X, 330, SUB, 16, true);
+    txt(blues.length + "개", INFO_X, 354, OK, 19, true);
+  }
+
+  /* 변 */
+  for(let i = 0; i < n; i++) seg(P[i], P[(i+1)%n], INK, 4.6);
+
+  /* 꼭짓점 + 이름 */
+  for(let i = 0; i < n; i++){
+    const on = (i === first);
+    dot(P[i], on ? BLUE : INK, on ? 10 : 7.5, on);
+    const a = -90 + 360*i/n;
+    ital(LETTERS[i], EX_C.x + Math.cos(rad(a))*(EX_R + 30), EX_C.y + Math.sin(rad(a))*(EX_R + 30),
+         on ? BLUE : SUB, 21);
+  }
+
+  if(n === 3) txt("삼각형은 대각선을 그을 수 없어요", EX_C.x, EX_C.y + EX_R + 72, ORANGE, 20, true);
+  $("tip").textContent = first >= 0 ? "이을 꼭짓점을 하나 더 눌러 보세요"
+                       : draws.size ? "빨간 선은 반대쪽 끝에서 또 그은 거예요"
+                       : "꼭짓점 두 개를 차례로 눌러 보세요";
+}
+
+/* ============================================================
+   ② 표 그리기 — 교과서처럼 한 꼭짓점에서만 그은 그림
+   ============================================================ */
+function drawTable(){
+  const cfg = [{n:4, cx:170}, {n:5, cx:450}, {n:6, cx:730}];
+  cfg.forEach(c => {
+    const R = 105, C = {x:c.cx, y:290};
+    const P = verts(c.n, C.x, C.y, R);
+    for(let j = 0; j < c.n; j++){
+      if(j === 0 || isAdj(0, j, c.n)) continue;
+      seg(P[0], P[j], BLUE, 3);
+    }
+    for(let i = 0; i < c.n; i++) seg(P[i], P[(i+1)%c.n], INK, 4.4);
+    for(let i = 0; i < c.n; i++) dot(P[i], i === 0 ? RED : INK, i === 0 ? 9 : 6.5, i === 0);
+    txt(nameOf(c.n), C.x, C.y + R + 72, INK, 22);
+  });
+  txt("빨간 꼭짓점 하나에서만 그어 보았어요", 450, 62, SUB, 19);
+  $("tip").textContent = "";
+}
+
+/* ============================================================
+   ③ 퀴즈 그리기
+   ============================================================ */
+function drawQuiz(){
+  const cnt = Q.n || 7;
+  const C = {x:450, y:310}, R = 210;
+  const P = verts(cnt, C.x, C.y, R);
+  if(Q.showAll){
+    for(let i = 0; i < cnt; i++)
+      for(let j = i+1; j < cnt; j++)
+        if(!isAdj(i, j, cnt)) seg(P[i], P[j], BLUE, 2);
+  }
+  for(let i = 0; i < cnt; i++) seg(P[i], P[(i+1)%cnt], INK, 4.6);
+  for(let i = 0; i < cnt; i++) dot(P[i], INK, 7);
+  txt(nameOf(cnt), C.x, 62, INK, 24);
+  $("tip").textContent = Q.showAll ? "대각선을 모두 그어 보았어요" : "";
+}
+
+function draw(){
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const v = view();
+  ctx.clearRect(0, 0, v.W, v.H);
+  ctx.save();
+  ctx.translate(v.ox, v.oy); ctx.scale(v.s, v.s);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(-v.ox/v.s, -v.oy/v.s, v.W/v.s, v.H/v.s);   /* 화면 전체를 칠한다 */
+  if(tab === "explore") drawExplore();
+  else if(tab === "table") drawTable();
+  else drawQuiz();
+  ctx.restore();
+}
+
+/* ============================================================
+   ① 조작
+   ============================================================ */
+function updateCounts(){
+  const m = drawnMap();
+  const dup = draws.size;
+  $("cDup").textContent = dup;
+  $("cUniq").textContent = m.size;
+
+  const full = n >= 4 && dup === n*(n-3);          /* 모든 대각선을 양쪽에서 다 그었다 */
+  if(full){
+    $("countFb").innerHTML =
+      '<div class="fb ok">꼭짓점 <b>' + n + '개</b>마다 <b>' + (n-3) + '개</b>씩 그어서 <b>' +
+      n + '×' + (n-3) + '=' + n*(n-3) + '번</b> 그었어요. 그런데 대각선마다 <b style="color:#e5484d">빨간 선</b>이 하나씩 더 붙어 있으니' +
+      ' 실제 대각선은 <b>' + (n*(n-3)/2) + '개</b>예요.</div>';
+  }else if(dup === 0){
+    $("countFb").innerHTML = "";
+  }else{
+    let twice = 0;
+    m.forEach(c => { if(c >= 2) twice++; });
+    $("countFb").innerHTML =
+      '<div class="fb info"><b>' + dup + '번</b> 그었고, 서로 다른 대각선은 <b>' + m.size + '개</b>예요.' +
+      (twice ? ' <b>' + twice + '개</b>는 양쪽에서 그어 <b style="color:#e5484d">빨간 선</b>이 옆에 붙었어요.' : '') + '</div>';
+  }
+  const total = n >= 4 ? n*(n-3)/2 : 0;
+  $("formulaBox").innerHTML =
+    '<span class="it">n</span>각형의 대각선의 개수 = ' +
+    '<span class="frac"><span class="top"><span class="it">n</span>(<span class="it">n</span>−3)</span><span class="bot">2</span></span>' +
+    '<br><span style="color:var(--sub);font-size:13.5px;">지금은 <span class="it">n</span> = ' + n +
+    ' → <b>' + total + '개</b></span>';
+}
+
+/* ÷2 장면을 처음 상태로 되돌린다 (선을 새로 그으면 늘 부른다) */
+function resetMerge(){
+  if(mergeAnim){ cancelAnimationFrame(mergeAnim); mergeAnim = null; }
+  mergeT = -1; halved = false;
+}
+
+/* 빨간 선이 짝인 파란 선 위로 하나씩 미끄러져 들어가며 개수가 반으로 줄어드는 장면 */
+function runHalve(){
+  const total = draws.size, uniq = drawnMap().size;
+  if(total === 0){
+    $("exploreFb").innerHTML =
+      '<div class="fb warn">먼저 대각선을 그어 보세요. <b>모든 꼭짓점에서 긋기</b> 를 누르면 한 번에 그어져요.</div>';
+    return;
+  }
+  if(total === uniq){
+    $("exploreFb").innerHTML =
+      '<div class="fb warn">아직 <b>두 번 그은 대각선</b>이 없어요. 같은 대각선을 <b>양쪽 끝에서</b> 그어 보거나' +
+      ' <b>모든 꼭짓점에서 긋기</b> 를 눌러 보세요.</div>';
+    return;
+  }
+  resetMerge();
+  mergeT = 0;
+  const t0 = performance.now(), DUR = 2500;
+  (function step(now){
+    mergeT = Math.min(1, (now - t0)/DUR);
+    draw();
+    if(mergeT < 1){
+      mergeAnim = requestAnimationFrame(step);
+    }else{
+      mergeAnim = null; mergeT = -1; halved = true;
+      draw();
+      $("exploreFb").innerHTML =
+        '<div class="fb ok">🎉 <b>' + total + '번</b> 그었지만 같은 대각선을 <b>두 번씩</b> 그은 것이라' +
+        ' 겹친 선을 걷어 내면 <b>' + total + ' ÷ 2 = ' + uniq + '</b>.' +
+        ' 실제 대각선은 <b>' + uniq + '개</b> 예요.</div>';
+      if(window.MKSCORE) MKSCORE.once("half" + n, 10, nameOf(n) + " 2로 나누기 확인");
+    }
+  })(t0);
+}
+
+$("rN").addEventListener("input", function(e){
+  n = +e.target.value;
+  draws.clear(); first = -1; resetMerge();
+  $("vN").textContent = nameOf(n) + " (n = " + n + ")";
+  $("exploreFb").innerHTML = n === 3
+    ? '<div class="fb warn">삼각형은 이웃하지 않는 꼭짓점이 없어서 대각선을 <b>하나도</b> 그을 수 없어요.</div>'
+    : "";
+  updateCounts(); draw();
+});
+$("btnAll").addEventListener("click", function(){
+  draws.clear(); first = -1; resetMerge();
+  for(let i = 0; i < n; i++)
+    for(let j = 0; j < n; j++)
+      if(j !== i && !isAdj(i, j, n)) draws.add(i + ">" + j);   /* 양쪽 방향을 모두 */
+  $("exploreFb").innerHTML = n === 3
+    ? '<div class="fb warn">삼각형은 대각선을 그을 수 없어요.</div>'
+    : '<div class="fb info">꼭짓점 <b>' + n + '개</b>에서 각각 <b>' + (n-3) + '개</b>씩 그었어요.' +
+      ' 대각선마다 <b style="color:#e5484d">빨간 선</b>이 하나씩 더 붙은 걸 보고 아래 두 수를 비교해 보세요.</div>';
+  updateCounts(); draw();
+  if(n >= 4 && window.MKSCORE) MKSCORE.once("all" + n, 5, nameOf(n) + " 대각선 모두 긋기");
+});
+$("btnHalf").addEventListener("click", runHalve);
+$("btnClear").addEventListener("click", function(){
+  draws.clear(); first = -1; resetMerge();
+  $("exploreFb").innerHTML = "";
+  updateCounts(); draw();
+});
+
+cv.addEventListener("pointerdown", function(ev){
+  if(tab !== "explore") return;
+  if(mergeT >= 0) return;                       /* 장면이 도는 동안에는 새로 긋지 않는다 */
+  if(halved) resetMerge();
+  const p = (window.MK && MK.pos) ? MK.pos(cv, ev) : {x:ev.offsetX, y:ev.offsetY};
+  const d = toDesign(p.x, p.y);
+  const P = verts(n, EX_C.x, EX_C.y, EX_R);
+  let best = -1, bd = 36;                       /* 가장 가까운 꼭짓점 (pitfalls #8) */
+  for(let i = 0; i < n; i++){
+    const dd = Math.hypot(P[i].x - d.x, P[i].y - d.y);
+    if(dd < bd){ bd = dd; best = i; }
+  }
+  if(best < 0) return;
+  if(n === 3){
+    $("exploreFb").innerHTML =
+      '<div class="fb warn">삼각형은 이웃하지 않는 꼭짓점이 없어서 대각선을 <b>하나도</b> 그을 수 없어요.</div>';
+    first = -1; draw();
+    return;
+  }
+
+  /* 첫 번째 꼭짓점 고르기 */
+  if(first < 0){
+    first = best;
+    $("exploreFb").innerHTML =
+      '<div class="fb info">꼭짓점 <b>' + LETTERS[best] + '</b> 를 골랐어요. 이을 꼭짓점을 하나 더 누르세요.</div>';
+    draw();
+    return;
+  }
+
+  /* 두 번째 꼭짓점 — 대각선이 되는지 따진다 */
+  const a = first, b = best;
+  if(a === b){
+    $("exploreFb").innerHTML =
+      '<div class="fb no">같은 꼭짓점 <b>' + LETTERS[a] + '</b> 를 두 번 눌렀어요.' +
+      ' <b>자기 자신</b>과는 선을 그을 수 없으니 대각선이 되지 않아요.</div>';
+    first = -1; draw();
+    return;
+  }
+  if(isAdj(a, b, n)){
+    $("exploreFb").innerHTML =
+      '<div class="fb no"><b>' + LETTERS[a] + LETTERS[b] + '</b> 는 <b>이웃한</b> 두 꼭짓점이에요.' +
+      ' 이으면 다각형의 <b>변</b>이 되므로 대각선이 아니에요.</div>';
+    first = -1; draw();
+    return;
+  }
+
+  const key = a + ">" + b, back = b + ">" + a;
+  if(draws.has(key)){
+    $("exploreFb").innerHTML =
+      '<div class="fb warn">' + LETTERS[a] + ' 에서 ' + LETTERS[b] + ' 로는 이미 그었어요.' +
+      (draws.has(back) ? ' 양쪽에서 다 그어서 선이 두 개예요.'
+                       : ' 이번엔 <b>' + LETTERS[b] + ' 에서 ' + LETTERS[a] + ' 로</b> 그어 보세요.') + '</div>';
+    first = -1; draw();
+    return;
+  }
+
+  draws.add(key);
+  $("exploreFb").innerHTML = draws.has(back)
+    ? '<div class="fb ok">대각선 <b>' + LETTERS[Math.min(a,b)] + LETTERS[Math.max(a,b)] + '</b> 를' +
+      ' <b>양쪽 끝에서</b> 한 번씩 그었어요. 옆에 <b style="color:#e5484d">빨간 선</b>이 하나 더 붙었지만,'
+      + ' 대각선은 여전히 <b>하나</b> 예요.</div>'
+    : '<div class="fb info">대각선 <b>' + LETTERS[a] + LETTERS[b] + '</b> 를 그었어요.' +
+      ' 꼭짓점 <b>' + LETTERS[a] + '</b> 에서는 자기 자신과 이웃한 두 꼭짓점을 뺀 <b>' +
+      n + ' − 3 = ' + (n-3) + '개</b>에 그을 수 있어요.</div>';
+  first = -1;
+  updateCounts(); draw();
+});
+
+/* ============================================================
+   ② 표
+   ============================================================ */
+const TABLE_KEYS = [["t4a",1],["t5a",2],["t6a",3],["t4b",2],["t5b",5],["t6b",9]];
+$("btnTable").addEventListener("click", function(){
+  let allOk = true, blank = false;
+  TABLE_KEYS.forEach(function(pair){
+    const el = $(pair[0]);
+    if(el.value === ""){ blank = true; el.className = ""; return; }
+    const ok = +el.value === pair[1];
+    el.className = ok ? "good" : "bad";
+    if(!ok) allOk = false;
+  });
+  if(blank){
+    $("tableFb").innerHTML = '<div class="fb warn">아직 비어 있는 칸이 있어요.</div>';
+    return;
+  }
+  $("tableFb").innerHTML = allOk
+    ? '<div class="fb ok">🎉 모두 맞았어요! 한 꼭짓점에서 <b>(n−3)개</b>, 그것을 <b>n번</b> 센 뒤 <b>2로 나눈다</b>는 걸 확인했어요.</div>'
+    : '<div class="fb no">빨간 칸을 다시 보세요. 한 꼭짓점에서는 <b>자기 자신과 이웃한 두 꼭짓점</b>을 뺀 개수만큼 그을 수 있어요.</div>';
+  if(allOk && window.MKSCORE) MKSCORE.once("table", 15, "대각선 표 완성");
+});
+$("btnTableClear").addEventListener("click", function(){
+  TABLE_KEYS.forEach(function(pair){ $(pair[0]).value = ""; $(pair[0]).className = ""; });
+  $("tableFb").innerHTML = "";
+});
+
+/* ============================================================
+   ③ 퀴즈 — 유형을 먼저 고른 뒤 값을 뽑는다 (pitfalls #13)
+   ============================================================ */
+const POOL = [7, 8, 9, 10, 11, 12, 13, 14, 15, 20];
+const KINDS = ["forward", "forward", "vertex", "backward"];
+function newQuestion(){
+  let kind, nn, guard = 0;
+  do{
+    kind = KINDS[Math.floor(Math.random()*KINDS.length)];
+    nn   = POOL[Math.floor(Math.random()*POOL.length)];
+    guard++;
+  }while(guard < 12 && kind === Q.kind && nn === Q.n);
+
+  Q.kind = kind; Q.n = nn; Q.done = false; Q.showAll = false;
+  if(kind === "forward"){
+    Q.ans = nn*(nn-3)/2;
+    $("ask").innerHTML = '<b>' + nameOf(nn) + '</b>의 대각선은 모두 몇 개일까요?';
+    $("unit").textContent = "개";
+  }else if(kind === "vertex"){
+    Q.ans = nn - 3;
+    $("ask").innerHTML = '<b>' + nameOf(nn) + '</b>의 <b>한 꼭짓점</b>에서 그을 수 있는 대각선은 몇 개일까요?';
+    $("unit").textContent = "개";
+  }else{
+    Q.ans = nn;
+    $("ask").innerHTML = '대각선이 모두 <b>' + (nn*(nn-3)/2) + '개</b>인 다각형은 몇 각형일까요?';
+    $("unit").textContent = "각형";
+  }
+  const inp = $("ansIn"); inp.value = ""; inp.className = "";
+  $("quizFb").innerHTML = "";
+  draw();
+}
+$("btnCheck").addEventListener("click", function(){
+  if(Q.done) return;
+  const inp = $("ansIn");
+  if(inp.value === ""){ $("quizFb").innerHTML = '<div class="fb warn">답을 적어 주세요.</div>'; return; }
+  const ok = +inp.value === Q.ans;
+  Q.done = true; Q.tries++;
+  if(ok){ Q.ok++; Q.streak++; } else { Q.streak = 0; }
+  inp.className = ok ? "good" : "bad";
+
+  const nn = Q.n;
+  let why;
+  if(Q.kind === "forward")
+    why = nameOf(nn) + '이므로 <b>' + nn + '×(' + nn + '−3)÷2 = ' + (nn*(nn-3)) + '÷2 = ' + (nn*(nn-3)/2) + '</b>개예요.';
+  else if(Q.kind === "vertex")
+    why = '자기 자신과 이웃한 두 꼭짓점에는 그을 수 없으므로 <b>' + nn + '−3 = ' + (nn-3) + '</b>개예요.';
+  else
+    why = '<b>' + nn + '×(' + nn + '−3)÷2 = ' + (nn*(nn-3)/2) + '</b> 이므로 <b>' + nameOf(nn) + '</b>이에요.';
+
+  $("quizFb").innerHTML =
+    '<div class="fb ' + (ok ? "ok" : "no") + '">' +
+    (ok ? "🎉 정답! " : '아쉬워요. 답은 <b>' + Q.ans + (Q.kind === "backward" ? "각형" : "개") + '</b>. ') +
+    why + '</div>';
+  $("qTry").textContent = Q.tries; $("qOk").textContent = Q.ok; $("qStreak").textContent = Q.streak;
+  if(window.MKSCORE) MKSCORE.quiz(ok, "대각선 개수 퀴즈");
+});
+$("btnNext").addEventListener("click", newQuestion);
+$("btnHint").addEventListener("click", function(){
+  Q.showAll = !Q.showAll;
+  $("quizFb").innerHTML =
+    '<div class="fb info">한 꼭짓점에서 <b>(n−3)개</b>씩, 꼭짓점이 <b>n개</b>. ' +
+    '대각선을 <b>두 번씩</b> 세었으니 2로 나눠요.</div>';
+  draw();
+});
+$("ansIn").addEventListener("keydown", function(e){ if(e.key === "Enter") $("btnCheck").click(); });
+
+/* ============================================================
+   탭
+   ============================================================ */
+document.querySelectorAll("header nav button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll("header nav button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    tab = b.dataset.tab;
+    if(tab !== "explore" && mergeAnim){ cancelAnimationFrame(mergeAnim); mergeAnim = null; mergeT = -1; }
+    $("pExplore").classList.toggle("hidden", tab !== "explore");
+    $("pTable")  .classList.toggle("hidden", tab !== "table");
+    $("pQuiz")   .classList.toggle("hidden", tab !== "quiz");
+    draw();
+  });
+});
+
+/* ============================================================
+   시작 — common.js 는 defer 이므로 반드시 DOMContentLoaded 이후에
+   ============================================================ */
+function boot(){
+  $("vN").textContent = nameOf(n) + " (n = " + n + ")";
+  updateCounts();
+  newQuestion();          /* 데이터 먼저 (pitfalls #16) */
+  tab = "explore";
+  if(window.MK && MK.fit) MK.fit(cv, draw);
+  draw();
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+
+})();
+</script>
+</body>
+</html>

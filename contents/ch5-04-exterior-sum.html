@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>외각 360° 모으기 — 드론으로 보기와 거북이 코딩</title>
+<link rel="stylesheet" href="../assets/common.css?v=4">
+<script src="../assets/common.js?v=4" data-home="../index.html?unit=5" defer></script>
+<script src="../assets/track.js?v=4" defer></script>
+<style>
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{font-family:var(--font); background:var(--bg); color:var(--ink); overflow:hidden;}
+  #app{height:100%; display:flex; flex-direction:column;}
+
+  header{
+    display:flex; align-items:center; gap:16px; padding:0 16px; height:52px; flex:none;
+    background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  header h1{font-size:17px; font-weight:800; white-space:nowrap;}
+  header nav{display:flex; gap:5px;}
+  header nav button{
+    font:600 14px/1 var(--font); padding:8px 12px; border-radius:9px;
+    border:1px solid transparent; background:none; color:var(--sub); cursor:pointer; white-space:nowrap;
+  }
+  header nav button:hover{background:var(--accent-soft); color:var(--accent);}
+  header nav button.on{background:var(--accent-soft); color:var(--accent); border-color:#c7d3f7;}
+
+  main{flex:1; min-height:0; padding:12px; display:grid; grid-template-columns:1fr 360px; gap:12px;}
+  .board-wrap{
+    position:relative; min-width:0;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  #board{width:100%; height:100%; display:block; touch-action:none;}
+  #tip{
+    position:absolute; right:12px; bottom:11px; pointer-events:none;
+    font-size:12.5px; font-weight:600; color:var(--sub);
+    background:#f7f9fdd9; padding:6px 12px; border-radius:999px; border:1px solid var(--line);
+  }
+  #tip:empty{display:none;}
+
+  aside{min-width:0; overflow-y:auto; display:flex; flex-direction:column; gap:10px;}
+  .blk{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:13px 14px;}
+  .blk h2{font-size:14px; font-weight:800; margin-bottom:9px; display:flex; align-items:center; gap:6px;}
+  .blk h2 .tag{font-size:11px; font-weight:700; color:#fff; background:var(--accent); padding:3px 8px; border-radius:6px;}
+  .blk p{font-size:13.5px; line-height:1.65; color:var(--sub);}
+  .blk p b{color:var(--ink);}
+
+  .row{display:flex; flex-wrap:wrap; gap:6px;}
+  .btn{
+    font:600 14px/1 var(--font); padding:9px 13px; border-radius:9px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer; transition:.14s;
+  }
+  .btn:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn.primary:hover{background:var(--accent-dark); color:#fff;}
+  .btn.sm{padding:7px 10px; font-size:13px;}
+  .btn:disabled{opacity:.45; cursor:default;}
+  .btn:disabled:hover{background:var(--panel); border-color:var(--line); color:var(--ink);}
+
+  .slider{margin-top:11px;}
+  .slider label{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:700; margin-bottom:5px;}
+  .slider label .v{color:var(--accent); font-size:14px;}
+  input[type=range]{width:100%; accent-color:var(--accent);}
+
+  .fb{font-size:13.5px; font-weight:600; line-height:1.6; padding:9px 11px; border-radius:9px; margin-top:9px;}
+  .fb.ok{background:var(--ok-soft); color:var(--ok);}
+  .fb.no{background:var(--no-soft); color:var(--no);}
+  .fb.info{background:var(--accent-soft); color:var(--accent-dark);}
+  .fb.warn{background:var(--warn-soft); color:#a75c00;}
+
+  .formula{
+    margin-top:10px; text-align:center; font-size:15px; font-weight:700; color:var(--ink);
+    background:#f7f9fd; border:1px solid var(--line); border-radius:10px; padding:11px 8px; line-height:1.95;
+  }
+  .formula .big{font-size:19px; color:var(--accent);}
+  .it{font-family:'Times New Roman',serif; font-style:italic; font-weight:700;}
+
+  /* ---------- 블록 코딩 ---------- */
+  .palette{display:flex; flex-direction:column; gap:6px; margin-top:9px;}
+  .prog{
+    margin-top:9px; background:#f4f6fb; border:2px dashed #c9d3e6; border-radius:12px;
+    padding:9px; min-height:112px; display:flex; flex-direction:column; gap:5px;
+  }
+  .prog.over{border-color:var(--accent); background:#eef2ff;}
+  .bk{
+    position:relative; display:flex; align-items:center; flex-wrap:wrap; gap:5px;
+    font:700 13px/1.5 var(--font); color:#fff; padding:8px 11px; border-radius:9px;
+    cursor:grab; user-select:none; touch-action:none; box-shadow:0 1px 2px rgba(20,28,45,.18);
+  }
+  .bk.move{background:#3e63dd;}
+  .bk.turn{background:#0e9bb5;}
+  .bk.repeat{background:#f5820b; display:block; padding:8px 9px 9px;}
+  .bk.start{background:#2f9e63; cursor:default; box-shadow:none;}
+  .bk.ghost{position:fixed; z-index:9999; pointer-events:none; opacity:.92; transform:translate(-16px,-16px);}
+  .bk input{
+    width:56px; font:800 13px var(--font); text-align:center; color:#1d2433;
+    border:0; border-radius:6px; padding:4px 3px; background:#fffffff2; cursor:text;
+  }
+  .bk .rep-head{display:flex; align-items:center; gap:5px;}
+  .bk .rep-body{
+    margin:7px 0 0 14px; padding:7px; border-radius:9px; background:#ffffff2e;
+    display:flex; flex-direction:column; gap:5px; min-height:38px;
+  }
+  .bk .rep-body:empty::after{
+    content:"여기에 블록을 끼우세요"; font-weight:600; font-size:12px; color:#ffffffcc;
+  }
+  .bk .del{
+    margin-left:auto; background:#ffffff33; border:0; color:#fff; cursor:pointer;
+    font:800 12px/1 var(--font); padding:4px 7px; border-radius:6px;
+  }
+  .bk .del:hover{background:#ffffff5c;}
+  .bk.running{outline:3px solid #ffd166; outline-offset:2px;}
+  .dropline{height:4px; border-radius:3px; background:var(--accent); margin:1px 0;}
+  .palette .bk{cursor:copy;}
+
+  .speed{display:flex; align-items:center; gap:6px; margin-top:9px; font-size:12.5px; font-weight:700; color:var(--sub);}
+  .speed button{
+    font:700 12.5px/1 var(--font); padding:6px 10px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel); color:var(--sub); cursor:pointer;
+  }
+  .speed button.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
+
+  .ansrow{display:flex; align-items:center; gap:8px; margin-top:10px;}
+  .ansrow input{
+    width:112px; font:700 17px var(--font); padding:9px 10px;
+    border:1px solid var(--line); border-radius:9px; text-align:center;
+  }
+  .ansrow input.good{border-color:var(--ok); background:var(--ok-soft); color:var(--ok);}
+  .ansrow input.bad {border-color:var(--no); background:var(--no-soft); color:var(--no);}
+
+  .scoreboard{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;}
+  .sc{background:#f7f9fd; border:1px solid var(--line); border-radius:10px; padding:9px 6px; text-align:center;}
+  .sc .v{font-size:21px; font-weight:800; line-height:1.1;}
+  .sc .l{font-size:11px; color:var(--sub); margin-top:3px;}
+  .sc.ok .v{color:var(--ok);}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:900px){
+    body{overflow:auto;}
+    #app{height:auto; min-height:100%;}
+    main{grid-template-columns:1fr; height:auto;}
+    .board-wrap{height:50vh; min-height:320px;}
+    header{flex-wrap:wrap; height:auto; padding:8px 12px; gap:10px;}
+    header nav{order:3; width:100%;}
+    header nav button{flex:1; padding:8px 4px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <h1>🚁 외각 360° 모으기</h1>
+  <nav>
+    <button class="on" data-tab="drone">① 드론으로 보기</button>
+    <button data-tab="turtle">② 거북이 코딩</button>
+    <button data-tab="quiz">③ 외각 문제</button>
+  </nav>
+  <a class="home-btn" href="../index.html?unit=5">← 목차</a>
+</header>
+
+<main>
+  <div class="board-wrap">
+    <canvas id="board"></canvas>
+    <div id="tip"></div>
+  </div>
+
+  <aside>
+    <!-- ① 드론 -->
+    <section id="pDrone">
+      <div class="blk">
+        <h2><span class="tag">활동 1</span> 드론을 띄워 위에서 보세요</h2>
+        <p>운동장 한가운데에 다각형을 그리고, 각 변을 <b>운동장 끝까지 늘여</b> 선을 그었어요.
+           드론을 높이 올리면 다각형은 <b>점처럼 작아지고</b> 외각만 남아요.
+           그 외각들이 <b>한 바퀴</b>를 채우는지 보세요. (교과서 187쪽)</p>
+        <div class="slider">
+          <label><span>변의 개수 <span class="it">n</span></span><span class="v" id="vN">오각형 (n = 5)</span></label>
+          <input type="range" id="rN" min="3" max="12" step="1" value="5">
+        </div>
+        <div class="slider">
+          <label><span>드론 높이</span><span class="v" id="vH">10 m</span></label>
+          <input type="range" id="rH" min="10" max="500" step="5" value="10">
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary sm" id="btnUp">🚁 드론 띄우기</button>
+          <button class="btn sm" id="btnDown">↓ 내려오기</button>
+        </div>
+        <div id="droneFb"></div>
+      </div>
+      <div class="blk">
+        <h2>알게 된 것</h2>
+        <div class="formula" id="fDrone"></div>
+        <p style="margin-top:9px;">모든 내각과 외각의 합은 <b>180°×<span class="it">n</span></b>,
+           거기서 내각의 합 <b>180°×(<span class="it">n</span>−2)</b> 를 빼면 항상 <b>360°</b> 예요.</p>
+      </div>
+    </section>
+
+    <!-- ② 거북이 코딩 -->
+    <section id="pTurtle" class="hidden">
+      <div class="blk">
+        <h2><span class="tag">활동 2</span> 블록을 끌어다 끼워 보세요</h2>
+        <p>아래 블록을 <b>끌어서</b> 프로그램 자리에 놓으면 돼요. 숫자는 눌러서 바꿀 수 있어요.
+           <b>반복 블록 안쪽</b>에 이동·회전 블록을 넣어 정다각형을 그려 보세요. (교과서 190쪽)</p>
+
+        <div style="font-size:12px;font-weight:800;color:var(--sub);margin-top:11px;">블록 서랍</div>
+        <div class="palette" id="palette"></div>
+
+        <div style="font-size:12px;font-weight:800;color:var(--sub);margin-top:11px;">프로그램</div>
+        <div class="prog" id="prog"></div>
+
+        <div class="speed">
+          <span>속도</span>
+          <button type="button" data-sp="1.8">느리게</button>
+          <button type="button" data-sp="1" class="on">보통</button>
+          <button type="button" data-sp="0.45">빠르게</button>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary" id="btnRun">▶ 실행</button>
+          <button class="btn sm" id="btnStop">⏹ 멈춤</button>
+          <button class="btn sm" id="btnSample">📋 예시 넣기</button>
+          <button class="btn sm" id="btnEmpty">🗑 비우기</button>
+        </div>
+        <div id="turtleFb"></div>
+      </div>
+      <div class="blk">
+        <h2>스스로 과제</h2>
+        <p>정<span class="it">n</span>각형을 그리려면 <b>반복 = <span class="it">n</span></b>,
+           <b>회전각 = 360 ÷ <span class="it">n</span></b> 이에요.
+           거북이가 도는 각이 바로 <b>한 외각</b>이고, 한 바퀴 돌면 <b>360°</b> 니까요.</p>
+        <div class="formula" id="fTurtle"></div>
+      </div>
+    </section>
+
+    <!-- ③ 퀴즈 -->
+    <section id="pQuiz" class="hidden">
+      <div class="blk">
+        <h2><span class="tag">활동 3</span> 외각 문제 풀기</h2>
+        <p id="ask"></p>
+        <div class="ansrow">
+          <input type="number" id="ansIn" placeholder="?" inputmode="numeric">
+          <span style="font-size:15px;font-weight:700;color:var(--sub);" id="unit">°</span>
+        </div>
+        <div id="quizFb"></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn primary" id="btnCheck">✅ 확인</button>
+          <button class="btn sm" id="btnNext">🔄 새 문제</button>
+        </div>
+        <div class="scoreboard">
+          <div class="sc"><div class="v" id="qTry">0</div><div class="l">푼 문제</div></div>
+          <div class="sc ok"><div class="v" id="qOk">0</div><div class="l">맞힘</div></div>
+          <div class="sc"><div class="v" id="qStreak">0</div><div class="l">연속</div></div>
+        </div>
+      </div>
+    </section>
+  </aside>
+</main>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+
+const DW = 900, DH = 600;
+const INK = "#1d2433", SUB = "#68738a";
+const BLUE = "#3e63dd", RED = "#e5484d", OK = "#2f9e63", ORANGE = "#f5820b";
+const rad = d => d*Math.PI/180;
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+const NAMES = {3:"삼각형",4:"사각형",5:"오각형",6:"육각형",7:"칠각형",8:"팔각형",
+               9:"구각형",10:"십각형",11:"십일각형",12:"십이각형",15:"십오각형",
+               18:"십팔각형",20:"이십각형",24:"이십사각형",36:"삼십육각형"};
+const nameOf = n => NAMES[n] || (n + "각형");
+const FILLS = ["#3e63dd", "#f5820b", "#2f9e63", "#8e4ec6", "#e5484d",
+               "#0e9bb5", "#c2410c", "#6d28d9", "#0f766e", "#b91c1c", "#1d4ed8", "#a16207"];
+
+const cv = $("board"), ctx = cv.getContext("2d");
+function view(){
+  const W = cv.clientWidth, H = cv.clientHeight;
+  const s = Math.min(W/DW, H/DH);
+  return {s, ox:(W - DW*s)/2, oy:(H - DH*s)/2, W, H};
+}
+
+function seg(a, b, color, w, dash){
+  ctx.save(); if(dash) ctx.setLineDash(dash);
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  ctx.restore();
+}
+function dot(P, color, r, filled){
+  ctx.fillStyle = filled ? color : "#fff";
+  ctx.strokeStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(P.x, P.y, r || 7, 0, 7); ctx.fill(); ctx.stroke();
+}
+function txt(t, x, y, color, size, halo){
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.font = "800 " + size + "px Pretendard, 'Malgun Gothic', sans-serif";
+  if(halo){ ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.lineJoin = "round"; ctx.strokeText(t, x, y); }
+  ctx.fillStyle = color; ctx.fillText(t, x, y);
+}
+/* 꼭짓점 O 에서 시작 방향 a0(도, 수학 기준 반시계) 부터 크기 w(도) 만큼의 부채꼴.
+   캔버스는 y 가 아래로 가므로 w 의 부호로 회전 방향을 정해야 우각이 칠해지지 않는다. */
+function wedge(O, a0, w, R, color, alpha){
+  ctx.beginPath(); ctx.moveTo(O.x, O.y);
+  ctx.arc(O.x, O.y, R, -rad(a0), -rad(a0 + w), w > 0);
+  ctx.closePath();
+  ctx.fillStyle = color + (alpha || "40"); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.stroke();
+}
+
+/* ============================================================
+   상태
+   ============================================================ */
+let tab = "drone";
+let n = 5;                    /* ① 변의 개수 */
+let alt = 10;                 /* ① 드론 높이(m) 10~100 */
+let droneAnim = null;
+let Q = {kind:"one", n:0, ans:0, done:false, tries:0, ok:0, streak:0};
+
+/* ============================================================
+   ① 드론으로 보기
+   운동장(가로 3000 × 세로 2000 인 땅)의 한가운데에 다각형을 그리고
+   각 변을 운동장 경계까지 늘여 둔다. 드론이 높이 올라갈수록 축척이 작아져
+   다각형은 점처럼 줄고, 외각 부채꼴만 한 점 둘레에 모여 360° 를 채운다.
+   ============================================================ */
+const HW = 2400, HH = 1600;        /* 운동장 절반 크기 (땅 좌표) */
+const R0 = 25;                     /* 다각형 반지름 (땅 좌표) — 운동장의 1/96 */
+const CX = 430, CY = 300;          /* 화면 한가운데 */
+const WEDGE_R = 96;                /* 외각 부채꼴 반지름 — 화면 기준 고정 */
+
+/* 축척 : 10 m 에서 5.8배(다각형 반지름 145px), 500 m 에서 0.116배(2.9px = 점).
+   운동장은 다각형의 96배라 높이 올라가야 경계가 화면에 들어온다. */
+const altScale = h => 58/h;
+const g2s = (g, k) => ({x:CX + g.x*k, y:CY + g.y*k});
+
+/* 땅 좌표에서 상자(±HW, ±HH) 경계까지 가는 길이 */
+function rayLen(o, d){
+  let t = Infinity;
+  if(Math.abs(d.x) > 1e-9) t = Math.min(t, ((d.x > 0 ? HW : -HW) - o.x)/d.x);
+  if(Math.abs(d.y) > 1e-9) t = Math.min(t, ((d.y > 0 ? HH : -HH) - o.y)/d.y);
+  return Math.max(0, t);
+}
+
+function drawDrone(){
+  const k = altScale(alt);
+  const pr = R0*k;                                 /* 다각형 반지름(화면 px) */
+  const shrink = clamp01((14 - pr)/6);             /* 14px → 0, 8px 이하 → 1 */
+
+  /* 운동장 */
+  const a = g2s({x:-HW, y:-HH}, k), b = g2s({x:HW, y:HH}, k);
+  ctx.fillStyle = "#eaf3e9";
+  ctx.strokeStyle = "#c3d8c1"; ctx.lineWidth = 3;
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(a.x, a.y, b.x - a.x, b.y - a.y, 26*Math.min(1, k));
+  else ctx.rect(a.x, a.y, b.x - a.x, b.y - a.y);
+  ctx.fill(); ctx.stroke();
+
+  /* 땅 좌표의 꼭짓점 */
+  const G = [];
+  for(let i = 0; i < n; i++){
+    const ang = -90 + 360*i/n;
+    G.push({x:Math.cos(rad(ang))*R0, y:Math.sin(rad(ang))*R0});
+  }
+
+  /* 변을 운동장 끝까지 늘인 선 + 외각 부채꼴 */
+  for(let i = 0; i < n; i++){
+    const A = G[i], B = G[(i+1)%n], C = G[(i+2)%n];
+    const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy);
+    const d = {x:dx/L, y:dy/L};
+    const t = rayLen(B, d);
+    seg(g2s(B, k), g2s({x:B.x + d.x*t, y:B.y + d.y*t}, k), "#93a6c2", 2.4, [9, 7]);
+
+    const dirAB = Math.atan2(-dy, dx)*180/Math.PI;
+    const dirBC = Math.atan2(-(C.y - B.y), C.x - B.x)*180/Math.PI;
+    let w = dirBC - dirAB;
+    while(w <= -180) w += 360;
+    while(w > 180) w -= 360;
+    wedge(g2s(B, k), dirAB, w, WEDGE_R, FILLS[i % FILLS.length], "40");
+  }
+
+  /* 다각형 — 아주 작아지면 점으로 보이게 굵기를 지킨다 */
+  for(let i = 0; i < n; i++)
+    seg(g2s(G[i], k), g2s(G[(i+1)%n], k), INK, Math.max(2.2, 4.4*Math.min(1, pr/145)));
+  if(pr > 26) for(let i = 0; i < n; i++) dot(g2s(G[i], k), INK, Math.min(6, pr/24));
+  if(pr < 6) dot({x:CX, y:CY}, INK, 3.6, true);    /* 점처럼 보이는 순간 */
+
+  /* 충분히 높이 올라오면 한 바퀴를 강조한다 */
+  if(shrink > 0){
+    const al = Math.round(shrink*255).toString(16).padStart(2, "0");
+    ctx.beginPath(); ctx.arc(CX, CY, WEDGE_R + 16, 0, 7);
+    ctx.strokeStyle = RED + al; ctx.lineWidth = 3.2;
+    ctx.setLineDash([9, 7]); ctx.stroke(); ctx.setLineDash([]);
+    if(shrink > 0.5) txt("외각의 합 = 360°", CX, CY - WEDGE_R - 44, RED, 23, true);
+  }
+
+  txt(nameOf(n) + " · 드론 높이 " + alt + " m", CX, 46, SUB, 19, true);
+  if(pr < 6) txt("다각형은 점 하나", CX, CY + WEDGE_R + 52, SUB, 18, true);
+  $("tip").textContent = pr > 90 ? "드론을 올려 보세요"
+                       : pr < 6 ? "다각형은 점, 남은 것은 외각뿐!" : "올라가는 중…";
+}
+
+function paintDrone(){
+  $("vN").textContent = nameOf(n) + " (n = " + n + ")";
+  $("vH").textContent = alt + " m";
+  $("fDrone").innerHTML =
+    '<span class="it">n</span>각형의 외각의 크기의 합 = <span class="big">360°</span>' +
+    '<br><span style="color:var(--sub);font-size:13.5px;">' +
+    '180° × ' + n + ' − 180° × (' + n + ' − 2) = ' + (180*n) + '° − ' + (180*(n-2)) + '° = <b>360°</b></span>';
+  $("droneFb").innerHTML = R0*altScale(alt) < 6
+    ? '<div class="fb ok">🎉 ' + nameOf(n) + '이 점처럼 작아졌어요. 외각 ' + n +
+      '개가 빈틈없이 <b>한 바퀴(360°)</b> 를 채웁니다. 변의 개수를 바꿔도 똑같아요.</div>'
+    : '';
+}
+
+function stopDrone(){ if(droneAnim){ cancelAnimationFrame(droneAnim); droneAnim = null; } }
+function flyTo(target){
+  stopDrone();
+  const from = alt, t0 = performance.now(), DUR = 2600;
+  (function step(now){
+    const u = Math.min(1, (now - t0)/DUR);
+    const e = u < 0.5 ? 2*u*u : 1 - Math.pow(-2*u + 2, 2)/2;    /* 부드럽게 */
+    /* 높이를 그냥 더하면 앞부분만 확 줄어든다 — 배(倍)로 올라가야 고르게 보인다 */
+    alt = Math.round(from*Math.pow(target/from, e));
+    $("rH").value = alt;
+    paintDrone(); draw();
+    if(u < 1) droneAnim = requestAnimationFrame(step);
+    else{
+      droneAnim = null;
+      if(target >= 500 && window.MKSCORE) MKSCORE.once("drone" + n, 5, nameOf(n) + " 드론으로 외각 모으기");
+    }
+  })(t0);
+}
+
+$("rN").addEventListener("input", function(e){ stopDrone(); n = +e.target.value; paintDrone(); draw(); });
+$("rH").addEventListener("input", function(e){ stopDrone(); alt = +e.target.value; paintDrone(); draw(); });
+$("btnUp").addEventListener("click", function(){ flyTo(500); });
+$("btnDown").addEventListener("click", function(){ flyTo(10); });
+
+/* ============================================================
+   ② 거북이 코딩 — 블록을 끌어다 끼우고, 한 블록씩 그려지는 모습을 본다
+   ============================================================ */
+const STEP_LEN_MAX = 400;
+let prog = [];                 /* [{kind:'move'|'turn'|'repeat', v, body?}] */
+let speed = 1;
+let run = null;
+let turtleAnim = null;
+
+function newBlock(kind){
+  if(kind === "move") return {kind:"move", v:1};
+  if(kind === "turn") return {kind:"turn", v:120};
+  return {kind:"repeat", v:3, body:[]};
+}
+function numInput(b){
+  const el = document.createElement("input");
+  el.type = "number"; el.value = b.v;
+  el.addEventListener("pointerdown", function(ev){ ev.stopPropagation(); });
+  el.addEventListener("input", function(){
+    const v = Math.round(+el.value);
+    b.v = isFinite(v) ? v : 0;
+    paintTurtleInfo();
+  });
+  return el;
+}
+function delButton(onClick){
+  const d = document.createElement("button");
+  d.className = "del"; d.type = "button"; d.textContent = "✕";
+  d.title = "이 블록 지우기";
+  d.addEventListener("pointerdown", function(ev){ ev.stopPropagation(); });
+  d.addEventListener("click", onClick);
+  return d;
+}
+
+function blockEl(b, path){
+  const el = document.createElement("div");
+  el.className = "bk " + b.kind;
+  el.dataset.path = path.join(",");
+  if(b.kind === "repeat"){
+    const head = document.createElement("div");
+    head.className = "rep-head";
+    head.appendChild(numInput(b));
+    head.appendChild(document.createTextNode(" 회 반복하기"));
+    head.appendChild(delButton(function(){ removeAt(path); }));
+    el.appendChild(head);
+    const body = document.createElement("div");
+    body.className = "rep-body";
+    body.dataset.body = path.join(",");
+    b.body.forEach(function(c, i){ body.appendChild(blockEl(c, path.concat(i))); });
+    el.appendChild(body);
+  }else if(b.kind === "move"){
+    el.appendChild(document.createTextNode("앞으로 "));
+    el.appendChild(numInput(b));
+    el.appendChild(document.createTextNode(" 만큼 이동하기"));
+    el.appendChild(delButton(function(){ removeAt(path); }));
+  }else{
+    el.appendChild(document.createTextNode("반시계방향으로 "));
+    el.appendChild(numInput(b));
+    el.appendChild(document.createTextNode(" 도 회전하기"));
+    el.appendChild(delButton(function(){ removeAt(path); }));
+  }
+  return el;
+}
+
+function renderProg(){
+  const box = $("prog");
+  box.innerHTML = "";
+  const start = document.createElement("div");
+  start.className = "bk start";
+  start.textContent = "🏁 지우고 시작하기";
+  box.appendChild(start);
+  prog.forEach(function(b, i){ box.appendChild(blockEl(b, [i])); });
+  paintTurtleInfo();
+}
+
+function listAt(path){ return path.length === 1 ? prog : prog[path[0]].body; }
+function removeAt(path){
+  listAt(path).splice(path[path.length - 1], 1);
+  stopTurtle(); renderProg(); draw();
+}
+
+/* ---------- 끌어서 놓기 ---------- */
+let drag = null;
+function dropTarget(x, y){
+  const bodies = $("prog").querySelectorAll(".rep-body");
+  for(let i = 0; i < bodies.length; i++){
+    const r = bodies[i].getBoundingClientRect();
+    if(x >= r.left - 6 && x <= r.right + 6 && y >= r.top - 4 && y <= r.bottom + 4){
+      const pi = +bodies[i].dataset.body;
+      const kids = bodies[i].querySelectorAll(":scope > .bk");
+      let idx = kids.length;
+      for(let j = 0; j < kids.length; j++){
+        const kr = kids[j].getBoundingClientRect();
+        if(y < kr.top + kr.height/2){ idx = j; break; }
+      }
+      return {list:prog[pi].body, index:idx, el:bodies[i], kids:kids, idx:idx};
+    }
+  }
+  const box = $("prog"), br = box.getBoundingClientRect();
+  if(x < br.left - 10 || x > br.right + 10 || y < br.top - 10 || y > br.bottom + 10) return null;
+  const kids = box.querySelectorAll(":scope > .bk:not(.start)");
+  let idx = kids.length;
+  for(let j = 0; j < kids.length; j++){
+    const kr = kids[j].getBoundingClientRect();
+    if(y < kr.top + kr.height/2){ idx = j; break; }
+  }
+  return {list:prog, index:idx, el:box, kids:kids, idx:idx};
+}
+function showLine(t){
+  const old = document.querySelector(".dropline");
+  if(old) old.remove();
+  if(!t) return;
+  const line = document.createElement("div");
+  line.className = "dropline";
+  const ref = t.kids[t.idx];
+  if(ref) t.el.insertBefore(line, ref);
+  else t.el.appendChild(line);
+}
+function ghostText(kind){
+  return kind === "move" ? "앞으로 … 이동하기"
+       : kind === "turn" ? "반시계방향 … 회전하기" : "… 회 반복하기";
+}
+function startDrag(ev, kind, fromPath){
+  ev.preventDefault();
+  const ghost = document.createElement("div");
+  ghost.className = "bk ghost " + kind;
+  ghost.textContent = ghostText(kind);
+  drag = {kind:kind, fromPath:fromPath, ghost:ghost};
+  document.body.appendChild(ghost);
+  moveDrag(ev);
+  window.addEventListener("pointermove", moveDrag);
+  window.addEventListener("pointerup", endDrag, {once:true});
+}
+function moveDrag(ev){
+  if(!drag) return;
+  drag.ghost.style.left = ev.clientX + "px";
+  drag.ghost.style.top  = ev.clientY + "px";
+  const t = dropTarget(ev.clientX, ev.clientY);
+  $("prog").classList.toggle("over", !!t);
+  showLine(t);
+}
+function endDrag(ev){
+  window.removeEventListener("pointermove", moveDrag);
+  const t = dropTarget(ev.clientX, ev.clientY);
+  showLine(null);
+  $("prog").classList.remove("over");
+  if(drag.ghost.parentNode) drag.ghost.remove();
+  const d = drag; drag = null;
+
+  if(!t){
+    if(d.fromPath) removeAt(d.fromPath);          /* 밖으로 끌어내면 지운다 */
+    return;
+  }
+  if(d.kind === "repeat" && t.list !== prog){
+    $("turtleFb").innerHTML = '<div class="fb warn">반복 블록 안에는 반복 블록을 넣을 수 없어요.</div>';
+    return;
+  }
+  if(d.fromPath){
+    const src = listAt(d.fromPath), i = d.fromPath[d.fromPath.length - 1];
+    const block = src[i];
+    src.splice(i, 1);
+    let idx = t.index;
+    if(t.list === src && i < idx) idx--;
+    t.list.splice(idx, 0, block);
+  }else{
+    t.list.splice(t.index, 0, newBlock(d.kind));
+  }
+  stopTurtle(); renderProg(); draw();
+}
+
+function buildPalette(){
+  const box = $("palette");
+  box.innerHTML = "";
+  [["move", "앞으로 1 만큼 이동하기"],
+   ["turn", "반시계방향으로 120 도 회전하기"],
+   ["repeat", "3 회 반복하기"]].forEach(function(p){
+    const el = document.createElement("div");
+    el.className = "bk " + p[0];
+    el.textContent = p[1];
+    el.addEventListener("pointerdown", function(ev){ startDrag(ev, p[0], null); });
+    box.appendChild(el);
+  });
+}
+
+/* ---------- 프로그램 → 거북이 걸음 ---------- */
+function flatten(){
+  const steps = [];
+  prog.forEach(function(b, i){
+    if(b.kind === "repeat"){
+      const times = Math.max(0, Math.min(60, Math.round(b.v)));
+      for(let t = 0; t < times; t++)
+        b.body.forEach(function(c, j){
+          if(c.kind !== "repeat") steps.push({kind:c.kind, v:c.v, path:[i, j].join(",")});
+        });
+    }else{
+      steps.push({kind:b.kind, v:b.v, path:String(i)});
+    }
+  });
+  return steps.slice(0, 600);
+}
+function simulate(steps){
+  const pts = [{x:0, y:0}];
+  let dir = 0;
+  steps.forEach(function(s){
+    if(s.kind === "turn"){ dir += s.v; return; }
+    const L = Math.max(-STEP_LEN_MAX, Math.min(STEP_LEN_MAX, s.v));
+    const p = pts[pts.length - 1];
+    pts.push({x:p.x + Math.cos(rad(dir))*L, y:p.y - Math.sin(rad(dir))*L});
+  });
+  return {pts:pts, dir:dir};
+}
+function fitOf(pts){
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  pts.forEach(function(p){
+    if(p.x < x0) x0 = p.x;
+    if(p.x > x1) x1 = p.x;
+    if(p.y < y0) y0 = p.y;
+    if(p.y > y1) y1 = p.y;
+  });
+  const w = Math.max(1e-6, x1 - x0), h = Math.max(1e-6, y1 - y0);
+  let s = Math.min(600/w, 400/h);
+  if(!isFinite(s) || s <= 0) s = 1;
+  return {s:s, ox:450 - (x0 + x1)/2*s, oy:315 - (y0 + y1)/2*s};
+}
+/* 거북이 — 머리가 +x 쪽을 보도록 제자리 좌표에 그린 뒤 진행 방향으로 돌린다 */
+const T_SHELL = "#2f9e63", T_PAT = "#9fdcba", T_SKIN = "#5ec98c", T_LINE = "#1c6b43";
+function turtleShape(P, dirDeg){
+  ctx.save();
+  ctx.translate(P.x, P.y);
+  ctx.rotate(-rad(dirDeg));                    /* 캔버스는 y 가 아래로 간다 */
+  ctx.scale(1.25, 1.25);                       /* 교실 화면에서도 보이도록 조금 크게 */
+
+  ctx.fillStyle = T_SKIN;
+  ctx.strokeStyle = T_LINE; ctx.lineWidth = 1.3;
+
+  /* 다리 넷 */
+  [[7.2, -7.2, -0.7], [7.2, 7.2, 0.7], [-7.4, -7.2, -2.4], [-7.4, 7.2, 2.4]].forEach(function(o){
+    ctx.save(); ctx.translate(o[0], o[1]); ctx.rotate(o[2]);
+    ctx.beginPath(); ctx.ellipse(0, 0, 5.6, 3.5, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  });
+  /* 꼬리 */
+  ctx.beginPath();
+  ctx.moveTo(-10.5, 0); ctx.lineTo(-17, -2.6); ctx.lineTo(-17, 2.6);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  /* 머리 */
+  ctx.beginPath(); ctx.ellipse(12.4, 0, 5.6, 4.6, 0, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#12331f";
+  ctx.beginPath(); ctx.arc(14.6, -2.2, 1.15, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(14.6, 2.2, 1.15, 0, 7); ctx.fill();
+
+  /* 등딱지 */
+  ctx.fillStyle = T_SHELL; ctx.strokeStyle = T_LINE; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.ellipse(0, 0, 12, 10, 0, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = T_PAT;
+  ctx.beginPath(); ctx.ellipse(0, 0, 5.4, 4.5, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = T_PAT; ctx.lineWidth = 1.5;
+  for(let i = 0; i < 6; i++){
+    const a = i*Math.PI/3 + Math.PI/6;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a)*5.8, Math.sin(a)*4.8);
+    ctx.lineTo(Math.cos(a)*11, Math.sin(a)*9.2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawTurtle(){
+  if(!run){
+    const steps = flatten();
+    if(!steps.length){
+      txt("블록을 끌어다 놓고 ▶ 실행 을 눌러 보세요", 450, 300, SUB, 21);
+      $("tip").textContent = "";
+      return;
+    }
+    const sim = simulate(steps), fit = fitOf(sim.pts);
+    const put = p => ({x:fit.ox + p.x*fit.s, y:fit.oy + p.y*fit.s});
+    for(let i = 0; i + 1 < sim.pts.length; i++)
+      seg(put(sim.pts[i]), put(sim.pts[i+1]), FILLS[i % FILLS.length], 4.2);
+    dot(put(sim.pts[0]), OK, 8, true);
+    turtleShape(put(sim.pts[sim.pts.length - 1]), sim.dir);
+    $("tip").textContent = "▶ 실행 을 누르면 한 블록씩 그려요";
+    return;
+  }
+
+  const put = p => ({x:run.fit.ox + p.x*run.fit.s, y:run.fit.oy + p.y*run.fit.s});
+  for(let i = 0; i + 1 < run.done.length; i++)
+    seg(put(run.done[i]), put(run.done[i+1]), FILLS[i % FILLS.length], 4.2);
+  const tail = run.done[run.done.length - 1];
+  if(run.partial) seg(put(tail), put(run.partial), FILLS[(run.done.length - 1) % FILLS.length], 4.2);
+  dot(put(run.done[0]), OK, 8, true);
+  turtleShape(put(run.partial || tail), run.dir);
+  txt((run.i + 1) + " / " + run.steps.length + " 걸음", 450, 46, SUB, 18, true);
+  $("tip").textContent = "거북이가 그리는 중…";
+}
+
+function markRunning(path){
+  $("prog").querySelectorAll(".bk.running").forEach(function(e){ e.classList.remove("running"); });
+  if(path == null) return;
+  const el = $("prog").querySelector('.bk[data-path="' + path + '"]');
+  if(el) el.classList.add("running");
+}
+function stopTurtle(){
+  if(turtleAnim){ cancelAnimationFrame(turtleAnim); turtleAnim = null; }
+  run = null; markRunning(null);
+}
+function runTurtle(){
+  stopTurtle();
+  const steps = flatten();
+  if(!steps.length){
+    $("turtleFb").innerHTML = '<div class="fb warn">프로그램이 비어 있어요. 블록을 끌어다 놓아 보세요.</div>';
+    draw(); return;
+  }
+  const sim = simulate(steps);
+  run = {steps:steps, fit:fitOf(sim.pts), done:[{x:0, y:0}], partial:null,
+         dir:0, dirBase:0, i:0, t0:performance.now()};
+  $("turtleFb").innerHTML = '<div class="fb info">거북이가 블록을 한 줄씩 실행하고 있어요.</div>';
+
+  (function step(now){
+    if(!run) return;
+    const s = run.steps[run.i];
+    const drawn = Math.abs(Math.max(-STEP_LEN_MAX, Math.min(STEP_LEN_MAX, s.v)))*run.fit.s;
+    const dur = (s.kind === "turn" ? 380 : Math.max(280, Math.min(900, drawn*2.2)))*speed;
+    const u = clamp01((now - run.t0)/dur);
+    markRunning(s.path);
+
+    if(s.kind === "turn"){
+      run.dir = run.dirBase + s.v*u;
+    }else{
+      const L = Math.max(-STEP_LEN_MAX, Math.min(STEP_LEN_MAX, s.v))*u;
+      const p = run.done[run.done.length - 1];
+      run.partial = {x:p.x + Math.cos(rad(run.dir))*L, y:p.y - Math.sin(rad(run.dir))*L};
+    }
+    draw();
+
+    if(u >= 1){
+      if(s.kind === "turn"){ run.dir = run.dirBase + s.v; }
+      else{ run.done.push(run.partial); run.partial = null; }
+      run.dirBase = run.dir;
+      run.i++;
+      if(run.i >= run.steps.length){ finishTurtle(); return; }
+      run.t0 = now;
+    }
+    turtleAnim = requestAnimationFrame(step);
+  })(performance.now());
+}
+function finishTurtle(){
+  const steps = run.steps;
+  const sim = simulate(steps);
+  const first = sim.pts[0], last = sim.pts[sim.pts.length - 1];
+  /* 닫혔는지는 **도형 크기에 견주어** 판단한다.
+     고정된 길이(예: 1.5)로 재면 '앞으로 1' 처럼 작은 도형은 무엇을 그려도 닫힌 것이 된다. */
+  let bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
+  sim.pts.forEach(function(q){
+    if(q.x < bx0) bx0 = q.x;
+    if(q.x > bx1) bx1 = q.x;
+    if(q.y < by0) by0 = q.y;
+    if(q.y > by1) by1 = q.y;
+  });
+  const size = Math.max(bx1 - bx0, by1 - by0, 1e-9);
+  const closed = Math.hypot(last.x - first.x, last.y - first.y) < size*0.005;
+
+  const moves = steps.filter(function(s){ return s.kind === "move"; });
+  const turns = steps.filter(function(s){ return s.kind === "turn"; });
+  const sameMove = moves.length > 2 && moves.every(function(s){ return s.v === moves[0].v; });
+  const sameTurn = turns.length > 0 && turns.every(function(s){ return s.v === turns[0].v; });
+  const total = turns.reduce(function(a, s){ return a + s.v; }, 0);
+  const regular = closed && sameMove && sameTurn && moves.length === turns.length &&
+                  Math.abs(total) === 360 && Math.abs(turns[0].v) === 360/moves.length;
+
+  turtleAnim = null;
+  markRunning(null);
+  run = null;
+  draw();
+
+  const m = moves.length, a = turns.length ? Math.abs(turns[0].v) : 0;
+  $("turtleFb").innerHTML = regular
+    ? '<div class="fb ok">🎉 <b>정' + nameOf(m) + '</b>이 그려졌어요! 회전한 각 ' + a +
+      '°는 정' + nameOf(m) + '의 <b>한 외각</b>이고, ' + m + '번 돌아 ' + Math.abs(total) + '° = 한 바퀴예요.</div>'
+    : closed
+      ? '<div class="fb warn">제자리로 돌아왔지만 정다각형은 아니에요. 회전한 각을 모두 더하면 <b>' +
+        Math.abs(total) + '°</b> 예요. <b>이동·회전을 반복 안에 넣고, 회전각 = 360 ÷ 반복 횟수</b> 로 맞춰 보세요.</div>'
+      : '<div class="fb no">제자리로 돌아오지 않았어요. 회전한 각을 모두 더하면 <b>' + Math.abs(total) +
+        '°</b> 라서 한 바퀴(360°)가 되지 않아요.</div>';
+  if(regular && window.MKSCORE) MKSCORE.once("turtle" + m, 10, "거북이로 정" + nameOf(m) + " 그리기");
+  paintTurtleInfo();
+}
+
+function paintTurtleInfo(){
+  let times = 0, ang = 0;
+  prog.forEach(function(b){
+    if(b.kind === "repeat"){
+      times = b.v;
+      b.body.forEach(function(c){ if(c.kind === "turn") ang = c.v; });
+    }else if(b.kind === "turn" && !ang) ang = b.v;
+  });
+  $("fTurtle").innerHTML = (times && ang)
+    ? '반복 × 회전각 = ' + times + ' × ' + ang + '° = <b>' + (times*ang) + '°</b>' +
+      '<br><span style="color:var(--sub);font-size:13px;">제자리로 돌아오려면 정확히 360° 가 되어야 해요.</span>'
+    : '<span style="color:var(--sub);font-size:13px;">반복 블록 안에 이동·회전을 넣으면' +
+      ' 반복 × 회전각을 여기에서 확인할 수 있어요.</span>';
+}
+
+$("btnRun").addEventListener("click", runTurtle);
+$("btnStop").addEventListener("click", function(){ stopTurtle(); draw(); });
+$("btnEmpty").addEventListener("click", function(){
+  stopTurtle(); prog = []; renderProg(); $("turtleFb").innerHTML = ""; draw();
+});
+$("btnSample").addEventListener("click", function(){
+  stopTurtle();
+  prog = [{kind:"repeat", v:3, body:[{kind:"move", v:1}, {kind:"turn", v:120}]}];
+  renderProg();
+  $("turtleFb").innerHTML =
+    '<div class="fb info">교과서 190쪽의 코드예요. ▶ 실행 을 눌러 보고, 숫자를 바꿔 정오각형도 만들어 보세요.</div>';
+  draw();
+});
+document.querySelectorAll(".speed button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll(".speed button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    speed = +b.dataset.sp;
+  });
+});
+
+/* ============================================================
+   ③ 퀴즈
+   ============================================================ */
+const QC = {x:450, y:315}, QR = 178;
+function drawQuiz(){
+  const cnt = Q.n || 6;
+  const P = [];
+  for(let i = 0; i < cnt; i++){
+    const a = -90 + 360*i/cnt;
+    P.push({x:QC.x + Math.cos(rad(a))*QR, y:QC.y + Math.sin(rad(a))*QR});
+  }
+  for(let i = 0; i < cnt; i++) seg(P[i], P[(i+1)%cnt], INK, 4.4);
+  for(let i = 0; i < cnt; i++){
+    const A = P[i], B = P[(i+1)%cnt], C = P[(i+2)%cnt];
+    const ux = B.x - A.x, uy = B.y - A.y, L = Math.hypot(ux, uy);
+    seg(B, {x:B.x + ux/L*48, y:B.y + uy/L*48}, SUB, 2.4, [6, 5]);
+    const dirAB = Math.atan2(-(B.y - A.y), B.x - A.x)*180/Math.PI;
+    const dirBC = Math.atan2(-(C.y - B.y), C.x - B.x)*180/Math.PI;
+    let d = dirBC - dirAB;
+    while(d <= -180) d += 360;
+    while(d > 180) d -= 360;
+    wedge(B, dirAB, d, 30, ORANGE, "44");
+  }
+  for(let i = 0; i < cnt; i++) dot(P[i], INK, 6.5);
+  txt((Q.kind === "sum" ? "" : "정") + nameOf(cnt), QC.x, 56, INK, 23, true);
+  $("tip").textContent = "주황 각이 외각이에요";
+}
+
+const KINDS = ["one", "one", "findN", "sum"];
+const POOL = [5, 6, 8, 9, 10, 12, 15, 18, 20, 24, 36];
+function newQuestion(){
+  let kind, nn, guard = 0;
+  do{
+    kind = KINDS[Math.floor(Math.random()*KINDS.length)];
+    nn   = POOL[Math.floor(Math.random()*POOL.length)];
+    guard++;
+  }while(guard < 40 && ((kind !== "sum" && 360 % nn !== 0) || (kind === Q.kind && nn === Q.n)));
+
+  Q.kind = kind; Q.n = nn; Q.done = false;
+  if(kind === "sum"){
+    Q.ans = 360;
+    $("ask").innerHTML = '<b>' + nameOf(nn) + '</b>의 외각의 크기의 합을 구하세요.';
+    $("unit").textContent = "°";
+  }else if(kind === "one"){
+    Q.ans = 360/nn;
+    $("ask").innerHTML = '<b>정' + nameOf(nn) + '</b>의 <b>한 외각</b>의 크기를 구하세요.';
+    $("unit").textContent = "°";
+  }else{
+    Q.ans = nn;
+    $("ask").innerHTML = '한 외각의 크기가 <b>' + (360/nn) + '°</b> 인 정다각형은 몇 각형일까요?';
+    $("unit").textContent = "각형";
+  }
+  const inp = $("ansIn"); inp.value = ""; inp.className = "";
+  $("quizFb").innerHTML = "";
+  draw();
+}
+$("btnCheck").addEventListener("click", function(){
+  if(Q.done) return;
+  const inp = $("ansIn");
+  if(inp.value === ""){ $("quizFb").innerHTML = '<div class="fb warn">답을 적어 주세요.</div>'; return; }
+  const ok = +inp.value === Q.ans;
+  Q.done = true; Q.tries++;
+  if(ok){ Q.ok++; Q.streak++; } else { Q.streak = 0; }
+  inp.className = ok ? "good" : "bad";
+
+  const nn = Q.n;
+  let why;
+  if(Q.kind === "sum")
+    why = '다각형의 외각의 크기의 합은 변의 개수와 상관없이 <b>항상 360°</b> 예요.';
+  else if(Q.kind === "one")
+    why = '정다각형은 외각이 모두 같으므로 360° ÷ ' + nn + ' = <b>' + (360/nn) + '°</b> 예요.';
+  else
+    why = '360° ÷ ' + (360/nn) + '° = <b>' + nn + '</b> 이므로 <b>정' + nameOf(nn) + '</b> 이에요.';
+
+  $("quizFb").innerHTML =
+    '<div class="fb ' + (ok ? "ok" : "no") + '">' +
+    (ok ? "🎉 정답! " : '아쉬워요. 답은 <b>' + Q.ans + (Q.kind === "findN" ? "각형" : "°") + '</b>. ') + why + '</div>';
+  $("qTry").textContent = Q.tries; $("qOk").textContent = Q.ok; $("qStreak").textContent = Q.streak;
+  if(window.MKSCORE) MKSCORE.quiz(ok, "외각 문제");
+});
+$("btnNext").addEventListener("click", newQuestion);
+$("ansIn").addEventListener("keydown", function(e){ if(e.key === "Enter") $("btnCheck").click(); });
+
+/* ============================================================
+   그리기 / 탭
+   ============================================================ */
+function draw(){
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const v = view();
+  ctx.clearRect(0, 0, v.W, v.H);
+  ctx.save();
+  ctx.translate(v.ox, v.oy); ctx.scale(v.s, v.s);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(-v.ox/v.s, -v.oy/v.s, v.W/v.s, v.H/v.s);    /* 화면 전체를 칠한다 */
+  if(tab === "drone") drawDrone();
+  else if(tab === "turtle") drawTurtle();
+  else drawQuiz();
+  ctx.restore();
+}
+
+document.querySelectorAll("header nav button").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll("header nav button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    tab = b.dataset.tab;
+    stopDrone(); stopTurtle();
+    $("pDrone") .classList.toggle("hidden", tab !== "drone");
+    $("pTurtle").classList.toggle("hidden", tab !== "turtle");
+    $("pQuiz")  .classList.toggle("hidden", tab !== "quiz");
+    draw();
+  });
+});
+
+/* ============================================================
+   시작 — common.js 는 defer 이므로 반드시 DOMContentLoaded 이후에
+   ============================================================ */
+function boot(){
+  paintDrone();
+  buildPalette();
+  prog = [{kind:"repeat", v:3, body:[{kind:"move", v:1}, {kind:"turn", v:120}]}];
+  renderProg();
+  $("prog").addEventListener("pointerdown", function(ev){
+    const el = ev.target.closest(".bk");
+    if(!el || el.classList.contains("start") || !el.dataset.path) return;
+    const path = el.dataset.path.split(",").map(Number);
+    const block = listAt(path)[path[path.length - 1]];
+    startDrag(ev, block.kind, path);
+  });
+  newQuestion();                 /* 데이터 먼저 (pitfalls #16) */
+  tab = "drone";
+  if(window.MK && MK.fit) MK.fit(cv, draw);
+  draw();
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+
+})();
+</script>
+</body>
+</html>

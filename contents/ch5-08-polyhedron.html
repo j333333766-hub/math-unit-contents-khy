@@ -72,6 +72,20 @@
 
   .kinds{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px;}
   .plat{display:grid; grid-template-columns:repeat(2,1fr); gap:6px; margin-top:10px;}
+  .conf .btn{line-height:1.35; text-align:left;}
+  .conf .btn small{display:block; font-size:11px; font-weight:600; color:var(--sub);}
+  #pPlato.conf-on #platoTbl, #pPlato.conf-on #platoFb{opacity:.35;}   /* 헷갈리는 예를 보는 동안 위 정다면체 표는 흐리게 */
+  #pArch.a6-on .blk:first-child table.meas, #pArch.a6-on #archFb{opacity:.35;}   /* 나머지 6가지를 보는 동안 위 깎기 표는 흐리게 */
+  .stops{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-top:8px;}
+  .stops .btn{padding:7px 2px; font-size:11.5px; line-height:1.3; word-break:keep-all;}
+  .found.seven{grid-template-columns:repeat(2,1fr);}
+  .legend{font-size:12.5px; color:var(--sub); margin-top:8px; line-height:1.7;}
+  .legend i{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px;}
+  #cmpLabels{position:absolute; inset:0; pointer-events:none;}
+  .cmpL{position:absolute; transform:translate(-50%, 0); text-align:center; font-weight:800; font-size:14px; white-space:nowrap;
+    background:#ffffffe0; padding:4px 11px; border-radius:10px; border:1px solid var(--line);}
+  .cmpL b{display:block; font-size:26px; line-height:1.1; color:var(--accent);}
+  .dot{display:inline-block; width:11px; height:11px; border-radius:50%; vertical-align:-1px; margin:0 3px 0 6px;}
 
   .slider{margin-top:11px;}
   .slider label{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:700; margin-bottom:5px;}
@@ -127,6 +141,7 @@
     <button data-tab="count">② 면·모서리·꼭짓점</button>
     <button data-tab="plato">③ 정다면체 다섯</button>
     <button data-tab="why">④ 왜 다섯 가지?</button>
+    <button data-tab="arch">⑤ 준정다면체</button>
   </nav>
   <a class="home-btn" href="../index.html?unit=5">← 목차</a>
 </header>
@@ -136,6 +151,7 @@
     <div class="stage">
       <canvas id="gl"></canvas>
       <div id="caption"></div>
+      <div id="cmpLabels" style="display:none"><div class="cmpL" id="cmpL0"></div><div class="cmpL" id="cmpL1"></div><div class="cmpL" id="cmpL2"></div></div>
     </div>
     <div id="tip"></div>
   </div>
@@ -190,6 +206,24 @@
         <div id="countFb"></div>
       </div>
       <div class="blk">
+        <h2>셋을 나란히 — 모서리·꼭짓점 세기</h2>
+        <p>같은 <span style="font-family:'Times New Roman',serif;font-style:italic">n</span>으로 각기둥·각뿔·각뿔대를 나란히 놓고,
+           부분마다 색을 칠하며 함께 세어 봐요. 위 슬라이더로 <span style="font-family:'Times New Roman',serif;font-style:italic">n</span>을 바꿀 수 있어요.</p>
+        <div class="row" id="cmpBtns" style="margin-top:10px;">
+          <button class="btn sm primary" data-w="edge">▶ 모서리 세기</button>
+          <button class="btn sm primary" data-w="vert">▶ 꼭짓점 세기</button>
+        </div>
+        <div id="cmpBox" hidden>
+          <div class="legend" id="cmpLegend"></div>
+          <table class="meas">
+            <tr><th></th><th>각기둥</th><th>각뿔</th><th>각뿔대</th></tr>
+            <tr><th id="cmpHead">모서리</th><td id="cmpC0">–</td><td id="cmpC1">–</td><td id="cmpC2">–</td></tr>
+          </table>
+          <div id="cmpFb"></div>
+          <button class="btn sm" id="btnCmpOff" style="margin-top:10px;">↩ 하나씩 보기로</button>
+        </div>
+      </div>
+      <div class="blk">
         <h2>알게 된 것</h2>
         <p><span style="font-family:'Times New Roman',serif;font-style:italic">n</span>각기둥은
            <b>(<span style="font-family:'Times New Roman',serif;font-style:italic">n</span>+2)면체</b>,
@@ -213,7 +247,7 @@
           <button class="btn sm" data-p="12">정십이면체</button>
           <button class="btn sm" data-p="20">정이십면체</button>
         </div>
-        <table class="meas">
+        <table class="meas" id="platoTbl">
           <tr><th>면의 모양</th><th>한 꼭짓점에<br>모인 면</th><th>면</th><th>모서리</th><th>꼭짓점</th></tr>
           <tr><td id="pShape">–</td><td id="pMeet">–</td><td id="pF">–</td><td id="pE">–</td><td id="pV">–</td></tr>
         </table>
@@ -241,6 +275,95 @@
           <button class="btn sm primary" id="btnGoWhy">④ 직접 접어 보기 ▶</button>
         </div>
         <div id="hexFb"></div>
+      </div>
+      <div class="blk">
+        <button class="btn sm" id="btnConfOpen" style="width:100%">🤔 헷갈리는 예</button>
+        <div id="confBody" hidden>
+        <h2 style="margin-top:11px">헷갈리는 예 — 정다면체일까?</h2>
+        <p>면이 모두 <b>합동인 정다각형</b>이어도, 꼭짓점마다 모인 면의 개수가 <b>다르면</b> 정다면체가 아니에요.
+           눌러서 꼭짓점 구슬의 색을 비교해 보세요. 같은 색 = 모인 면의 개수가 같아요.</p>
+        <div class="plat conf" id="confBtns">
+          <button class="btn sm" data-c="tri">삼각쌍뿔<small>정사면체 두 개를 붙이면?</small></button>
+          <button class="btn sm" data-c="pent">오각쌍뿔<small>정삼각형 10개</small></button>
+          <button class="btn sm" data-c="gyro">정삼각형 16개 다면체<small>사각뿔 + 엇갈린 띠 + 사각뿔</small></button>
+          <button class="btn sm" data-c="sq">사각쌍뿔<small>정사각뿔 두 개를 붙이면?</small></button>
+          <button class="btn sm" data-c="cubo">육팔면체<small>정육면체를 모서리 가운데까지 깎기</small></button>
+        </div>
+        <table class="meas" id="confTable" hidden>
+          <tr><th>면의 모양</th><th>면이 모두<br>합동?</th><th>꼭짓점에 모인 면의 개수</th></tr>
+          <tr><td id="cfShape">–</td><td id="cfSame">–</td><td id="cfMeet">–</td></tr>
+        </table>
+        <div id="confFb"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑤ 준정다면체 -->
+    <section id="pArch" class="hidden">
+      <div class="blk">
+        <h2><span class="tag">활동 5</span> 정다면체를 깎으면 준정다면체</h2>
+        <p>각 면이 <b>두 종류 이상의 정다각형</b>이고, <b>모든 꼭짓점의 모양이 똑같은</b> 다면체를
+           <b>준정다면체</b>(아르키메데스 다면체)라고 해요. 정다면체의 꼭짓점을 조금씩 깎아 보세요.</p>
+        <div class="kinds" id="archFam">
+          <button class="btn sm on" data-a="tetra">정사면체</button>
+          <button class="btn sm" data-a="cube">정육면체<br>↔ 정팔면체</button>
+          <button class="btn sm" data-a="dodeca">정십이면체<br>↔ 정이십면체</button>
+        </div>
+        <div class="slider">
+          <label><span>깎기</span><span class="v" id="vArch">정사면체</span></label>
+          <input type="range" id="rArch" min="0" max="1000" step="1" value="0">
+        </div>
+        <div class="stops" id="archStops"></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn sm primary" id="btnArchPlay">▶ 천천히 깎기</button>
+          <button class="btn sm" id="btnArchBack">↺ 처음으로</button>
+        </div>
+        <div class="legend"><i style="background:#9fc4f0"></i>처음 정다면체의 면 &nbsp; <i style="background:#f5b56b"></i>꼭짓점을 깎아 생긴 면 &nbsp; 연한 선 = 깎기 전 모양</div>
+        <table class="meas">
+          <tr><th>면의 구성</th><th>면</th><th>모서리</th><th>꼭짓점</th></tr>
+          <tr><td id="aShape">–</td><td id="aF">–</td><td id="aE">–</td><td id="aV">–</td></tr>
+        </table>
+        <div id="archFb"></div>
+      </div>
+      <div class="blk">
+        <h2>나머지 6가지 — 깎기만으로는 안 나와요</h2>
+        <p>면을 바깥으로 <b>밀어내거나</b>, 밀어내면서 <b>돌린 뒤</b> 틈을 정다각형으로 메워야 만들어지는 준정다면체예요.
+           골라 보고 [만드는 모습 보기]를 눌러 보세요.</p>
+        <div class="plat conf" id="arch6Btns">
+          <button class="btn sm" data-x="rhco">마름모육팔면체<small>3·4·4·4</small></button>
+          <button class="btn sm" data-x="trco">깎은 육팔면체<small>4·6·8</small></button>
+          <button class="btn sm" data-x="snco">다듬은 정육면체<small>3·3·3·3·4</small></button>
+          <button class="btn sm" data-x="rid">마름모십이이십면체<small>3·4·5·4</small></button>
+          <button class="btn sm" data-x="tid">깎은 십이이십면체<small>4·6·10</small></button>
+          <button class="btn sm" data-x="snd">다듬은 정십이면체<small>3·3·3·3·5</small></button>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn sm primary" id="btnArch6Play" disabled>▶ 만드는 모습 보기</button>
+        </div>
+        <table class="meas" id="a6Tbl" hidden>
+          <tr><th>면의 구성</th><th>면</th><th>모서리</th><th>꼭짓점</th><th>꼭짓점<br>배열</th></tr>
+          <tr><td id="a6Shape">–</td><td id="a6F">–</td><td id="a6E">–</td><td id="a6V">–</td><td id="a6Conf">–</td></tr>
+        </table>
+        <div id="arch6Fb"></div>
+      </div>
+      <div class="blk">
+        <h2>만난 준정다면체 <span id="archCnt" style="color:var(--accent)">0 / 13</span></h2>
+        <div class="found seven" id="archFound">
+          <span data-n="깎은 정사면체">깎은 정사면체</span>
+          <span data-n="깎은 정육면체">깎은 정육면체</span>
+          <span data-n="육팔면체">육팔면체</span>
+          <span data-n="깎은 정팔면체">깎은 정팔면체</span>
+          <span data-n="깎은 정십이면체">깎은 정십이면체</span>
+          <span data-n="십이이십면체">십이이십면체</span>
+          <span data-n="깎은 정이십면체">깎은 정이십면체 ⚽</span>
+          <span data-n="마름모육팔면체">마름모육팔면체</span>
+          <span data-n="깎은 육팔면체">깎은 육팔면체</span>
+          <span data-n="다듬은 정육면체">다듬은 정육면체</span>
+          <span data-n="마름모십이이십면체">마름모십이이십면체</span>
+          <span data-n="깎은 십이이십면체">깎은 십이이십면체</span>
+          <span data-n="다듬은 정십이면체">다듬은 정십이면체</span>
+        </div>
+        <p style="margin-top:10px; font-size:12.5px;">준정다면체는 모두 <b>13가지</b>예요. 위에서 깎아 만든 7가지와 나머지 6가지를 모두 만나 보세요.</p>
       </div>
     </section>
 
@@ -325,7 +448,7 @@ window.addEventListener("pointermove", function(e){
 });
 canvas.addEventListener("wheel", function(e){
   e.preventDefault();
-  distCam = Math.max(5, Math.min(16, distCam + (e.deltaY > 0 ? 0.6 : -0.6)));
+  distCam = Math.max(5, Math.min(cmp ? 30 : 16, distCam + (e.deltaY > 0 ? 0.6 : -0.6)));
 }, {passive:false});
 
 /* 캔버스가 아니라 바깥 상자를 잰다 (pitfalls #5) */
@@ -592,6 +715,7 @@ function netOf(k){
   return (netCache[k] = {faces:faces, tree:tree, Q:Q, c:c, fit:Math.min(1, 3.0/rad)});
 }
 function buildPlato(){
+  if(confKey){ buildConf(); return; }
   clearGroup();
   const net = netOf(platN), t = netT;
   const M = netFrames(net, net.tree, t);
@@ -622,8 +746,9 @@ function buildPlato(){
 
 function rebuild(){
   if(tab === "find") buildFind();
-  else if(tab === "count") buildCount();
+  else if(tab === "count"){ if(cmp) buildCmp(); else buildCount(); }
   else if(tab === "plato") buildPlato();
+  else if(tab === "arch") buildArch();
   else buildWhy();
   scene.updateMatrixWorld(true);            /* 만든 직후 행렬 갱신 (pitfalls #6) */
 }
@@ -684,10 +809,16 @@ document.querySelectorAll("#kindBtns button").forEach(function(b){
     document.querySelectorAll("#kindBtns button").forEach(function(x){ x.classList.remove("on"); });
     b.classList.add("on");
     kind = b.dataset.k;
+    if(cmp){ setCmp(false); }
     paintCount(); rebuild();
   });
 });
-$("rN").addEventListener("input", function(e){ nSide = +e.target.value; paintCount(); rebuild(); });
+$("rN").addEventListener("input", function(e){
+  nSide = +e.target.value; paintCount();
+  if(cmp){ cmpDone = true; cmpTick.last = null; }        /* 나란히 보는 중이면 다 센 모습으로 바로 */
+  rebuild();
+  if(cmp) cmpFinish();
+});
 function toggleBtn(id, get, set){
   $(id).addEventListener("click", function(){
     set(!get());
@@ -698,6 +829,194 @@ function toggleBtn(id, get, set){
 toggleBtn("btnFace", function(){ return showFace; }, function(v){ showFace = v; });
 toggleBtn("btnEdge", function(){ return showEdge; }, function(v){ showEdge = v; });
 toggleBtn("btnVert", function(){ return showVert; }, function(v){ showVert = v; });
+
+/* ---------- ② 나란히 비교: 각기둥·각뿔·각뿔대를 함께 두고 모서리·꼭짓점을 차례로 센다 ----------
+   부분(밑면 둘레 → 윗면 둘레 → 옆 모서리 / 밑면 꼭짓점 → 윗면 꼭짓점·꼭대기)마다 색을 정해,
+   세 입체가 같은 부분을 같은 때 함께 센다. 각뿔은 윗면이 없어 그 차례에 0 으로 기다린다. */
+let cmp = false, cmpWhat = null, cmpT0 = 0, cmpDone = true, cmpSubs = [], cmpItems = [], cmpPlan = null, cmpSavedDist = null;
+const CMP_KINDS = ["prism", "pyramid", "frustum"];
+const CMP_GAP = 4.3, CMP_R = 1.45, CMP_H = 2.5, CMP_STEP = 0.34, CMP_PAUSE = 0.7;
+const PART = {
+  bottom:{col:0x3e63dd, e:"밑면 둘레",  v:"밑면 꼭짓점"},
+  top:   {col:0x2f9e63, e:"윗면 둘레",  v:"윗면 꼭짓점"},
+  side:  {col:0xf5820b, e:"옆 모서리"},
+  apex:  {col:0xe5484d, v:"꼭대기"}
+};
+const PHASES = {edge:["bottom", "top", "side"], vert:["bottom", "top"]};   /* vert 의 top 차례에 각뿔은 꼭대기(apex) */
+function cmpName(kind){ const k = (KNUM[nSide] || nSide) + "각"; return k + (kind === "prism" ? "기둥" : kind === "pyramid" ? "뿔" : "뿔대"); }
+function cmpModel(kind, n){
+  const topR = kind === "prism" ? CMP_R : kind === "frustum" ? CMP_R*0.55 : 0;
+  const ring = function(r, y){
+    const a = [];
+    for(let i = 0; i < n; i++){ const t = 2*Math.PI*i/n + Math.PI/n; a.push(new THREE.Vector3(r*Math.sin(t), y, r*Math.cos(t))); }
+    return a;
+  };
+  const B = ring(CMP_R, -CMP_H/2), T = topR ? ring(topR, CMP_H/2) : [new THREE.Vector3(0, CMP_H/2, 0)];
+  const edge = [], vert = [], faces = [B, topR ? T : null].filter(Boolean);
+  B.forEach(function(p, i){ edge.push({a:p, b:B[(i + 1)%n], part:"bottom"}); });
+  if(topR) T.forEach(function(p, i){ edge.push({a:p, b:T[(i + 1)%n], part:"top"}); });
+  B.forEach(function(p, i){
+    edge.push({a:p, b:topR ? T[i] : T[0], part:"side"});
+    faces.push(topR ? [p, B[(i + 1)%n], T[(i + 1)%n], T[i]] : [p, B[(i + 1)%n], T[0]]);
+  });
+  B.forEach(function(p){ vert.push({p:p, part:"bottom"}); });
+  T.forEach(function(p){ vert.push({p:p, part:topR ? "top" : "apex"}); });
+  return {edge:edge, vert:vert, faces:faces};
+}
+/* 시간표: 차례(phase)마다 세 입체 중 가장 많은 쪽에 맞춰 길이를 잡는다 */
+function cmpSchedule(models){
+  const plan = {start:{}, end:0};
+  let t = 0.3;
+  PHASES[cmpWhat].forEach(function(ph){
+    plan.start[ph] = t;
+    let most = 0;
+    models.forEach(function(m){
+      most = Math.max(most, m[cmpWhat].filter(function(it){ return it.part === ph || (ph === "top" && it.part === "apex"); }).length);
+    });
+    t += most*CMP_STEP + CMP_PAUSE;
+  });
+  plan.end = t;
+  return plan;
+}
+function buildCmp(){
+  cmpSubs.forEach(function(sub){ sub.traverse(function(o){ if(o.geometry) o.geometry.dispose(); if(o.material) o.material.dispose(); }); });
+  clearGroup();
+  cmpSubs = []; cmpItems = [];
+  const models = CMP_KINDS.map(function(k){ return cmpModel(k, nSide); });
+  if(cmpWhat) cmpPlan = cmpSchedule(models);
+  models.forEach(function(m, si){
+    const sub = new THREE.Group();
+    sub.position.x = (si - 1)*CMP_GAP;
+    const pos = [];
+    m.faces.forEach(function(f){
+      for(let j = 1; j < f.length - 1; j++) [f[0], f[j], f[j + 1]].forEach(function(q){ pos.push(q.x, q.y, q.z); });
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    sub.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:COL.face, transparent:true, opacity:0.22,
+      side:THREE.DoubleSide, depthWrite:false})));
+    m.edge.forEach(function(e){
+      sub.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([e.a, e.b]),
+        new THREE.LineBasicMaterial({color:cmpWhat === "edge" ? 0xb9c3d8 : COL.edge})));
+    });
+    /* 셀 것 — 처음엔 숨겨 두고 차례가 오면 자라나거나(모서리) 톡 튀어나온다(꼭짓점) */
+    if(cmpWhat){
+      const seen = {};
+      m[cmpWhat].forEach(function(it){
+        const ph = it.part === "apex" ? "top" : it.part;
+        const k = seen[ph] = (seen[ph] || 0) + 1;
+        const start = cmpPlan.start[ph] + (k - 1)*CMP_STEP;
+        let obj;
+        if(cmpWhat === "edge"){
+          const len = it.a.distanceTo(it.b), dir = new THREE.Vector3().subVectors(it.b, it.a).normalize();
+          obj = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 1, 10), new THREE.MeshBasicMaterial({color:PART[it.part].col}));
+          obj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+          obj.userData = {a:it.a, dir:dir, len:len};
+        }else{
+          obj = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), new THREE.MeshBasicMaterial({color:PART[it.part].col}));
+          obj.position.copy(it.p);
+        }
+        obj.visible = false;
+        sub.add(obj);
+        cmpItems.push({obj:obj, start:start, sub:si, part:it.part});
+      });
+    }
+    group.add(sub); cmpSubs.push(sub);
+  });
+  $("caption").textContent = cmpWhat ? (cmpWhat === "edge" ? "모서리를 세어 봐요" : "꼭짓점을 세어 봐요") : "나란히 비교";
+  $("tip").textContent = "끌어서 돌려 보세요";
+  cmpTick(true);
+}
+/* 매 장면마다: 시간에 맞춰 보이기·자라기, 개수 세기 */
+function cmpTick(force){
+  if(!cmpWhat) return;
+  const t = cmpDone ? Infinity : (performance.now() - cmpT0)/1000;
+  const cnt = [{}, {}, {}];
+  cmpItems.forEach(function(it){
+    const u = Math.max(0, Math.min(1, (t - it.start)/0.28));
+    it.obj.visible = u > 0;
+    if(u > 0) cnt[it.sub][it.part] = (cnt[it.sub][it.part] || 0) + 1;
+    if(cmpWhat === "edge"){
+      const d = it.obj.userData, L = d.len*u;
+      it.obj.scale.set(1, Math.max(L, 1e-4), 1);
+      it.obj.position.copy(d.a).addScaledVector(d.dir, L/2);
+    }else{
+      const s = u < 1 ? 1.5*Math.sin(u*Math.PI/2) - 0.5*u*u : 1;   /* 살짝 크게 튀었다 제자리 */
+      it.obj.scale.setScalar(Math.max(s, 1e-4));
+    }
+  });
+  if(!cmpDone && t > cmpPlan.end){ cmpDone = true; cmpFinish(); }
+  const key = JSON.stringify(cnt);
+  if(!force && key === cmpTick.last) return;
+  cmpTick.last = key;
+  cmpPaint(cnt);
+}
+function cmpBreak(c, parts){
+  const used = parts.filter(function(p){ return c[p]; });
+  const sum = used.reduce(function(s, p){ return s + c[p]; }, 0);
+  if(!used.length) return "<b>0</b>";
+  const terms = used.map(function(p){ return '<span style="color:' + hex(PART[p].col) + ';font-weight:800">' + c[p] + '</span>'; });
+  return (used.length > 1 ? terms.join(" + ") + " = " : "") + "<b>" + sum + "</b>";
+}
+function cmpPaint(cnt){
+  const parts = cmpWhat === "edge" ? ["bottom", "top", "side"] : ["bottom", "top", "apex"];
+  CMP_KINDS.forEach(function(k, i){
+    $("cmpC" + i).innerHTML = cmpBreak(cnt[i], parts);
+    const sum = parts.reduce(function(s, p){ return s + (cnt[i][p] || 0); }, 0);
+    $("cmpL" + i).innerHTML = cmpName(k) + "<b>" + sum + "</b>";
+  });
+}
+function cmpFinish(){
+  const n = nSide;
+  $("cmpFb").innerHTML = cmpWhat === "edge"
+    ? '<div class="fb ok">🎉 모서리 — ' + cmpName("prism") + ' <b>' + 3*n + '</b>(= 3×' + n + '), ' + cmpName("pyramid") + ' <b>' + 2*n +
+      '</b>(= 2×' + n + '), ' + cmpName("frustum") + ' <b>' + 3*n + '</b>(= 3×' + n + ')<br>각뿔은 <b>윗면 둘레가 없어서</b> 밑면 둘레 + 옆 모서리뿐이에요.</div>'
+    : '<div class="fb ok">🎉 꼭짓점 — ' + cmpName("prism") + ' <b>' + 2*n + '</b>(= 2×' + n + '), ' + cmpName("pyramid") + ' <b>' + (n + 1) +
+      '</b>(= ' + n + '+1), ' + cmpName("frustum") + ' <b>' + 2*n + '</b>(= 2×' + n + ')<br>각뿔은 윗면 대신 <b>꼭대기 하나</b>로 모여요.</div>';
+  if(window.MKSCORE) MKSCORE.once("cmp" + cmpWhat + n, 3, "나란히 " + (cmpWhat === "edge" ? "모서리" : "꼭짓점") + " 세기 (n=" + n + ")", false);
+}
+function cmpFit(){                                /* 세 입체가 화면 폭에 다 들어오게 카메라를 뒤로 */
+  const aspect = VW && VH ? VW/VH : 1.5, tn = Math.tan(20*Math.PI/180);
+  distCam = Math.min(30, Math.max(9, (CMP_GAP + CMP_R + 0.6)/(tn*aspect) + 1.5, 3.3/tn));
+}
+let cmpSavedRot = null;
+function cmpRestoreView(){
+  if(cmpSavedDist != null) distCam = cmpSavedDist;
+  if(cmpSavedRot){ rot.th = cmpSavedRot.th; rot.ph = cmpSavedRot.ph; }
+}
+function setCmp(on, what){
+  if(on && !cmp){ cmpSavedDist = distCam; cmpSavedRot = {th:rot.th, ph:rot.ph}; cmpFit(); rot.th = 0; rot.ph = 0.3; }   /* 정면에서 — 비스듬하면 셋의 크기가 달라 보인다 */
+  if(!on && cmp) cmpRestoreView();
+  cmp = on;
+  $("cmpBox").hidden = !on;
+  document.querySelectorAll("#cmpBtns button").forEach(function(b){ b.classList.toggle("on", on && b.dataset.w === what); });
+  if(on && innerWidth <= 900) document.querySelector(".board-wrap").scrollIntoView({block:"start", behavior:"smooth"});   /* 좁은 화면: 패널이 아래라 입체 쪽으로 올려 준다 */
+  if(on){
+    cmpWhat = what; cmpDone = false; cmpT0 = performance.now(); cmpTick.last = null;
+    $("cmpFb").innerHTML = "";
+    $("cmpHead").innerHTML = what === "edge" ? "모서리" : "꼭짓점";
+    $("cmpLegend").innerHTML = (what === "edge" ? ["bottom", "top", "side"] : ["bottom", "top", "apex"]).map(function(p){
+      return '<span class="dot" style="background:' + hex(PART[p].col) + '"></span>' + PART[p][what === "edge" ? "e" : "v"];
+    }).join(" ");
+  }
+  rebuild();
+}
+document.querySelectorAll("#cmpBtns button").forEach(function(b){
+  b.addEventListener("click", function(){ setCmp(true, b.dataset.w); });
+});
+$("btnCmpOff").addEventListener("click", function(){ setCmp(false); });
+const cmpLabels = $("cmpLabels");
+function cmpLabelPos(){
+  const show = tab === "count" && cmp;
+  cmpLabels.style.display = show ? "" : "none";
+  if(!show) return;
+  cmpSubs.forEach(function(sub, i){
+    const p = new THREE.Vector3(sub.position.x, -CMP_H/2 - 0.75, 0).project(camera);
+    const el = $("cmpL" + i);
+    el.style.left = ((p.x + 1)/2*VW) + "px";
+    el.style.top = ((1 - p.y)/2*VH) + "px";
+  });
+}
 
 /* ============================================================
    ③ 정다면체
@@ -721,6 +1040,7 @@ document.querySelectorAll("#platBtns button").forEach(function(b){
     document.querySelectorAll("#platBtns button").forEach(function(x){ x.classList.remove("on"); });
     b.classList.add("on");
     platN = +b.dataset.p;
+    clearConf();
     paintPlato(); paintNet(); rebuild();
   });
 });
@@ -757,10 +1077,142 @@ function playNet(to){
   })(t0);
 }
 $("rNet").addEventListener("input", function(e){
-  stopNet(); netT = +e.target.value/100; paintNet(); rebuild();
+  clearConf(); stopNet(); netT = +e.target.value/100; paintNet(); rebuild();
 });
-$("btnUnfold").addEventListener("click", function(){ playNet(1); });
-$("btnRefold").addEventListener("click", function(){ playNet(0); });
+$("btnUnfold").addEventListener("click", function(){ clearConf(); playNet(1); });
+$("btnRefold").addEventListener("click", function(){ clearConf(); playNet(0); });
+
+/* ---------- 헷갈리는 예: 면은 모두 정다각형인데 정다면체가 아닌(또는 맞는) 다면체 ----------
+   꼭짓점만 주고 볼록껍질로 면을 찾는다(점이 많아야 16개라 모든 세 점 조합을 봐도 가볍다).
+   모서리 길이는 모두 1 — 면이 정말 정다각형이 되게 좌표를 계산해 둔다. */
+let confKey = null;
+const R5 = 1/(2*Math.sin(Math.PI/5));
+function ring(n, r, y, off){
+  const a = [];
+  for(let i = 0; i < n; i++){ const t = off + 2*Math.PI*i/n; a.push([r*Math.cos(t), y, r*Math.sin(t)]); }
+  return a;
+}
+const R4 = Math.SQRT1_2, H4 = Math.sqrt(1 - 2*R4*R4*(1 - Math.SQRT1_2))/2;   /* 엇갈린 띠(사각 엇각기둥) 높이의 절반 */
+const CONF = {
+  tri:  {name:"삼각쌍뿔", pts:ring(3, 1/Math.sqrt(3), 0, 0).concat([[0, Math.sqrt(2/3), 0], [0, -Math.sqrt(2/3), 0]]),
+         say:"정사면체 두 개를 붙인 모양이에요. 면은 모두 합동인 정삼각형이지만, 위·아래 꼭짓점에는 면이 <b>3개</b>, 가운데 꼭짓점에는 <b>4개</b>가 모여요."},
+  pent: {name:"오각쌍뿔", pts:ring(5, R5, 0, Math.PI/2).concat([[0, Math.sqrt(1 - R5*R5), 0], [0, -Math.sqrt(1 - R5*R5), 0]]),
+         say:"면은 모두 합동인 정삼각형이지만, 위·아래 꼭짓점에는 면이 <b>5개</b>, 가운데 꼭짓점에는 <b>4개</b>가 모여요."},
+  gyro: {name:"정삼각형 16개 다면체", pts:ring(4, R4, H4, 0).concat(ring(4, R4, -H4, Math.PI/4),
+           [[0, H4 + R4, 0], [0, -H4 - R4, 0]]),
+         say:"면 16개가 모두 합동인 정삼각형이지만, 맨 위·아래 꼭짓점에는 면이 <b>4개</b>, 나머지 꼭짓점에는 <b>5개</b>가 모여요."},
+  sq:   {name:"사각쌍뿔", pts:ring(4, R4, 0, 0).concat([[0, R4, 0], [0, -R4, 0]]),
+         say:"정사각뿔 두 개를 붙였더니 모든 꼭짓점에 면이 <b>4개</b>씩 모여요. 이건 <b>정팔면체</b>예요! 쌍뿔이라고 다 아닌 건 아니에요."},
+  cubo: {name:"육팔면체", pts:[[1,1,0],[1,-1,0],[-1,1,0],[-1,-1,0],[1,0,1],[1,0,-1],[-1,0,1],[-1,0,-1],[0,1,1],[0,1,-1],[0,-1,1],[0,-1,-1]]
+           .map(function(p){ return p.map(function(v){ return v*Math.SQRT1_2; }); }),
+         say:"꼭짓점마다 면이 <b>4개</b>씩 똑같이 모이지만, 면이 정삼각형과 정사각형으로 <b>합동이 아니에요</b>. 두 조건을 모두 맞춰야 정다면체예요."}
+};
+const DEG_COL = {3:0xf5820b, 4:0x3e63dd, 5:0xe5484d};
+const hex = function(c){ return "#" + c.toString(16).padStart(6, "0"); };
+function hullOf(P){
+  const V = P.map(function(p){ return new THREE.Vector3(p[0], p[1], p[2]); });
+  const faces = [], seen = {}, EPS = 1e-6;
+  for(let i = 0; i < V.length; i++) for(let j = i + 1; j < V.length; j++) for(let k = j + 1; k < V.length; k++){
+    const n = new THREE.Vector3().subVectors(V[j], V[i]).cross(new THREE.Vector3().subVectors(V[k], V[i]));
+    if(n.length() < EPS) continue;
+    n.normalize();
+    const d = n.dot(V[i]);
+    let pos = 0, neg = 0;
+    const on = [];
+    V.forEach(function(v, m){ const t = n.dot(v) - d; if(t > EPS) pos++; else if(t < -EPS) neg++; else on.push(m); });
+    if(pos && neg) continue;
+    if(pos) n.negate();                                   /* 바깥쪽을 보게 */
+    const key = on.slice().sort(function(a, b){ return a - b; }).join(",");
+    if(seen[key]) continue;
+    seen[key] = 1;
+    const c = new THREE.Vector3();
+    on.forEach(function(m){ c.add(V[m]); }); c.multiplyScalar(1/on.length);
+    const u = new THREE.Vector3().subVectors(V[on[0]], c).normalize(), w = new THREE.Vector3().crossVectors(n, u);
+    on.sort(function(a, b){
+      const A = new THREE.Vector3().subVectors(V[a], c), B = new THREE.Vector3().subVectors(V[b], c);
+      return Math.atan2(A.dot(w), A.dot(u)) - Math.atan2(B.dot(w), B.dot(u));
+    });
+    faces.push(on);
+  }
+  const deg = V.map(function(_, m){ return faces.filter(function(f){ return f.indexOf(m) >= 0; }).length; });
+  return {V:V, faces:faces, deg:deg};
+}
+const confCache = {};
+function confOf(k){
+  if(!confCache[k]){
+    const h = hullOf(CONF[k].pts);
+    let r = 0; h.V.forEach(function(v){ r = Math.max(r, v.length()); });
+    h.scale = 2.4/r;
+    confCache[k] = h;
+  }
+  return confCache[k];
+}
+function buildConf(){
+  clearGroup();
+  const h = confOf(confKey), s = h.scale;
+  const P = h.V.map(function(v){ return v.clone().multiplyScalar(s); });
+  const pos = {};                                        /* 면 모양(변의 수)마다 색을 달리한다 — 육팔면체의 정사각형이 드러나게 */
+  h.faces.forEach(function(f){
+    const arr = pos[f.length] || (pos[f.length] = []);
+    for(let j = 1; j < f.length - 1; j++) [P[f[0]], P[f[j]], P[f[j + 1]]].forEach(function(q){ arr.push(q.x, q.y, q.z); });
+    group.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(f.map(function(m){ return P[m]; })),
+      new THREE.LineBasicMaterial({color:COL.edge})));
+  });
+  Object.keys(pos).forEach(function(n){
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos[n], 3));
+    group.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:n === "3" ? COL.face : 0xf6c86b, transparent:true,
+      opacity:n === "3" ? 0.34 : 0.5, side:THREE.DoubleSide, depthWrite:false})));
+  });
+  P.forEach(function(p, m){
+    const sp = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), new THREE.MeshBasicMaterial({color:DEG_COL[h.deg[m]] || 0x555555}));
+    sp.position.copy(p); group.add(sp);
+  });
+  $("caption").textContent = CONF[confKey].name;
+  $("tip").textContent = "끌어서 돌려 보며 꼭짓점 색을 비교해 보세요";
+}
+function paintConf(){
+  const h = confOf(confKey), c = CONF[confKey];
+  const sides = {}, cnt = {};
+  h.faces.forEach(function(f){ sides[f.length] = (sides[f.length] || 0) + 1; });
+  h.deg.forEach(function(d){ cnt[d] = (cnt[d] || 0) + 1; });
+  const same = Object.keys(sides).length === 1, even = Object.keys(cnt).length === 1, ok = same && even;
+  $("confTable").hidden = false;
+  $("cfShape").innerHTML = Object.keys(sides).map(function(n){ return PNAME[n] + " <b>" + sides[n] + "</b>개"; }).join("<br>");
+  $("cfSame").innerHTML = same ? '<b style="color:var(--ok)">예</b>' : '<b style="color:var(--no)">아니요</b>';
+  $("cfMeet").innerHTML = Object.keys(cnt).map(function(d){
+    return '<span class="dot" style="background:' + hex(DEG_COL[d]) + '"></span><b>' + d + '개</b> 모인 꼭짓점 ' + cnt[d] + '곳';
+  }).join("<br>");
+  $("confFb").innerHTML = '<div class="fb ' + (ok ? "ok" : "warn") + '">' +
+    (ok ? "⭕ <b>정다면체예요.</b> " : "❌ <b>정다면체가 아니에요.</b> ") + c.say + '</div>';
+  $("confFb").scrollIntoView({block:"nearest", behavior:"smooth"});
+  if(window.MKSCORE) MKSCORE.once("conf" + confKey, 3, c.name + " 정다면체인지 따져 보기", false);
+}
+function clearConf(){
+  if(!confKey) return;
+  confKey = null;
+  $("pPlato").classList.remove("conf-on");
+  document.querySelectorAll("#confBtns button").forEach(function(x){ x.classList.remove("on"); });
+  document.querySelectorAll("#platBtns button").forEach(function(x){ x.classList.toggle("on", +x.dataset.p === platN); });
+}
+/* 기본은 [헷갈리는 예] 단추만 — 누르면 펼치고, 다시 누르면 접으며 정다면체 화면으로 돌아간다 */
+$("btnConfOpen").addEventListener("click", function(){
+  const open = $("confBody").hidden;
+  $("confBody").hidden = !open;
+  $("btnConfOpen").classList.toggle("on", open);
+  if(open) $("btnConfOpen").scrollIntoView({block:"start", behavior:"smooth"});
+  else if(confKey){ clearConf(); $("confTable").hidden = true; $("confFb").innerHTML = ""; rebuild(); }
+});
+document.querySelectorAll("#confBtns button").forEach(function(b){
+  b.addEventListener("click", function(){
+    stopNet(); netT = 0; paintNet();
+    document.querySelectorAll("#confBtns button, #platBtns button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    confKey = b.dataset.c;
+    $("pPlato").classList.add("conf-on");
+    paintConf(); rebuild();
+  });
+});
 
 $("btnGoWhy").addEventListener("click", function(){
   document.querySelector('header nav button[data-tab="why"]').click();
@@ -1003,6 +1455,478 @@ $("btnGrow").addEventListener("click", function(){
 });
 
 /* ============================================================
+   ⑤ 준정다면체 — 정다면체의 꼭짓점을 평면으로 깎는다
+   ------------------------------------------------------------
+   입체 = (원래 면의 평면들) ∩ (꼭짓점마다 중심→꼭짓점 방향에 수직인 자르는 평면).
+   자르는 평면은 꼭짓점에서 이웃 꼭짓점 쪽으로 모서리의 τ 만큼 들어간 점을 지난다(τ: 0 → 0.5).
+   τ = 0.5(모서리 가운데)면 육팔면체·십이이십면체(정사면체는 정팔면체)가 되고, 그 뒤는 쌍대 정다면체를
+   거꾸로 깎는 것과 같아서 슬라이더 뒤 절반은 쌍대를 τ 0.5 → 0 으로 되돌린다.
+   쌍대는 꼭짓점을 원래 면의 법선 방향으로 잡아 만들기 때문에 가운데에서 모양·방향이 그대로 이어진다.
+   남은 면이 정다각형이 되는 τ : 정p각형 면에서 남는 변 a(1−2τ) = 잘린 변 2aτ·sin(θ/2), θ = 한 내각
+   ============================================================ */
+const ARCH_FAM = {
+  tetra:  {make:function(){ return new THREE.TetrahedronGeometry(1); },
+           names:["정사면체", "깎은 정사면체", "정팔면체", "깎은 정사면체", "정사면체"]},
+  cube:   {make:function(){ return new THREE.BoxGeometry(2, 2, 2); },
+           names:["정육면체", "깎은 정육면체", "육팔면체", "깎은 정팔면체", "정팔면체"]},
+  dodeca: {make:function(){ return new THREE.DodecahedronGeometry(1); },
+           names:["정십이면체", "깎은 정십이면체", "십이이십면체", "깎은 정이십면체", "정이십면체"]}
+};
+const ARCH_COL = {F:0x9fc4f0, V:0xf5b56b};
+let archKey = "tetra", archS = 0, archAnim = null, archSol = null;
+const archFound = {};
+
+function sortAround(pts, idx, n){                 /* 평면(법선 n) 위의 점들을 둘레 순서로 */
+  const c = new THREE.Vector3();
+  idx.forEach(function(m){ c.add(pts[m]); }); c.multiplyScalar(1/idx.length);
+  const u = new THREE.Vector3().subVectors(pts[idx[0]], c).normalize(), w = new THREE.Vector3().crossVectors(n, u);
+  return idx.slice().sort(function(a, b){
+    const A = new THREE.Vector3().subVectors(pts[a], c), B = new THREE.Vector3().subVectors(pts[b], c);
+    return Math.atan2(A.dot(w), A.dot(u)) - Math.atan2(B.dot(w), B.dot(u));
+  });
+}
+function solidFrom(pts){                          /* 꼭짓점 → 면 평면·이웃 꼭짓점·딱 맞게 깎는 τ */
+  const h = hullOf(pts);
+  const planes = h.faces.map(function(f){
+    const c = new THREE.Vector3(); f.forEach(function(m){ c.add(h.V[m]); }); c.multiplyScalar(1/f.length);
+    const n = new THREE.Vector3().subVectors(h.V[f[1]], h.V[f[0]])
+      .cross(new THREE.Vector3().subVectors(h.V[f[2]], h.V[f[0]])).normalize();
+    if(n.dot(c) < 0) n.negate();
+    return {n:n, d:n.dot(h.V[f[0]])};
+  });
+  const p = h.faces[0].length;
+  const f0 = h.faces.find(function(f){ return f.indexOf(0) >= 0; });
+  return {V:h.V, faces:h.faces, planes:planes, nb:f0[(f0.indexOf(0) + 1) % f0.length],
+          tauT:1/(2 + 2*Math.sin(Math.PI*(p - 2)/p/2))};
+}
+const archBase = {};
+function archPair(key){
+  if(archBase[key]) return archBase[key];
+  const g = ARCH_FAM[key].make(), P = g.attributes.position, pts = [], seen = {};
+  for(let i = 0; i < P.count; i++){
+    const k = P.getX(i).toFixed(4) + "," + P.getY(i).toFixed(4) + "," + P.getZ(i).toFixed(4);
+    if(seen[k]) continue;
+    seen[k] = 1; pts.push([P.getX(i), P.getY(i), P.getZ(i)]);
+  }
+  g.dispose();
+  const A = solidFrom(pts);
+  const B = solidFrom(A.planes.map(function(pl){ return [pl.n.x, pl.n.y, pl.n.z]; }));
+  return (archBase[key] = {A:A, B:B});
+}
+function cutSolid(S, tau){
+  const v0 = S.V[0], c = v0.clone().normalize().dot(v0.clone().lerp(S.V[S.nb], tau));
+  const planes = S.planes.map(function(p){ return {n:p.n, d:p.d, kind:"F"}; })
+    .concat(tau > 0 ? S.V.map(function(v){ return {n:v.clone().normalize(), d:c, kind:"V"}; }) : []);
+  const pts = [], L = planes.length;
+  for(let i = 0; i < L; i++) for(let j = i + 1; j < L; j++) for(let k = j + 1; k < L; k++){
+    const a = planes[i].n, b = planes[j].n, e = planes[k].n;
+    const bc = new THREE.Vector3().crossVectors(b, e), det = a.dot(bc);
+    if(Math.abs(det) < 1e-9) continue;
+    const x = bc.multiplyScalar(planes[i].d)
+      .add(new THREE.Vector3().crossVectors(e, a).multiplyScalar(planes[j].d))
+      .add(new THREE.Vector3().crossVectors(a, b).multiplyScalar(planes[k].d)).divideScalar(det);
+    if(planes.some(function(p){ return p.n.dot(x) > p.d + 1e-6; })) continue;
+    if(pts.some(function(q){ return q.distanceToSquared(x) < 1e-10; })) continue;
+    pts.push(x);
+  }
+  const faces = [];
+  planes.forEach(function(p){
+    const on = [];
+    pts.forEach(function(x, m){ if(Math.abs(p.n.dot(x) - p.d) < 1e-6) on.push(m); });
+    if(on.length >= 3) faces.push({idx:sortAround(pts, on, p.n), kind:p.kind});
+  });
+  return {P:pts, faces:faces};
+}
+/* 슬라이더 0~1 → (어느 정다면체를, τ 얼마나). 0·0.25·0.5·0.75·1 이 정다면체·준정다면체 자리 */
+function archAt(s){
+  const pair = archPair(archKey), back = s > 0.5, S = back ? pair.B : pair.A, x = back ? 1 - s : s;
+  const tau = x <= 0.25 ? x/0.25*S.tauT : S.tauT + (x - 0.25)/0.25*(0.5 - S.tauT);
+  return {S:S, back:back, sol:cutSolid(S, tau)};
+}
+function archStats(sol){
+  const seen = {}, lens = [];
+  sol.faces.forEach(function(f){
+    f.idx.forEach(function(m, i){
+      const n = f.idx[(i + 1) % f.idx.length], k = m < n ? m + "," + n : n + "," + m;
+      if(!seen[k]){ seen[k] = 1; lens.push(sol.P[m].distanceTo(sol.P[n])); }
+    });
+  });
+  const types = {};
+  sol.faces.forEach(function(f){
+    const n = f.idx.length, t = types[n] || (types[n] = {count:0, regular:true});
+    t.count++;
+    const sl = f.idx.map(function(m, i){ return sol.P[m].distanceTo(sol.P[f.idx[(i + 1) % n]]); });
+    if(Math.max.apply(null, sl)/Math.min.apply(null, sl) > 1.001) t.regular = false;
+  });
+  /* 꼭짓점 배열: 꼭짓점을 둘러싼 면의 변 수를 차례로 — 돌리거나 뒤집어도 같은 것 중 가장 작은 것 */
+  const conf = sol.P.map(function(x, m){
+    const around = sol.faces.filter(function(f){ return f.idx.indexOf(m) >= 0; });
+    const n = x.clone().normalize(), u = new THREE.Vector3(), w = new THREE.Vector3();
+    u.copy(Math.abs(n.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0)).cross(n).normalize();
+    w.crossVectors(n, u);
+    const seq = around.map(function(f){
+      const c = new THREE.Vector3(); f.idx.forEach(function(q){ c.add(sol.P[q]); }); c.multiplyScalar(1/f.idx.length).sub(x);
+      return {a:Math.atan2(c.dot(w), c.dot(u)), n:f.idx.length};
+    }).sort(function(p, q){ return p.a - q.a; }).map(function(o){ return o.n; });
+    let best = null;                              /* 숫자로 비교한다 — 글자로 비교하면 10 이 3 보다 앞선다 */
+    [seq, seq.slice().reverse()].forEach(function(q){
+      for(let r = 0; r < q.length; r++){
+        const c = q.slice(r).concat(q.slice(0, r));
+        if(!best || c.some(function(x, i){ return x !== best[i] && c.slice(0, i).every(function(y, j){ return y === best[j]; }) && x < best[i]; })) best = c;
+      }
+    });
+    return best.join("·");
+  });
+  return {F:sol.faces.length, E:lens.length, V:sol.P.length, types:types,
+          sameEdge:Math.max.apply(null, lens)/Math.min.apply(null, lens) < 1.001,
+          conf:conf[0], uniform:conf.every(function(c){ return c === conf[0]; })};
+}
+function archName(){
+  const v = Math.round(archS*1000), names = ARCH_FAM[archKey].names;
+  if(v % 250 === 0) return names[v/250];
+  return (archS < 0.5 ? names[0] : names[4]) + "의 꼭짓점을 깎는 중";
+}
+function buildArch(){
+  if(archExtra){ buildArch6(); return; }
+  clearGroup();
+  const at = archAt(archS), sol = archSol = at.sol;
+  let r = 0; sol.P.forEach(function(p){ r = Math.max(r, p.length()); });
+  const k = 2.4/r, P = sol.P.map(function(p){ return p.clone().multiplyScalar(k); });
+  const pos = {F:[], V:[]};
+  sol.faces.forEach(function(f){
+    for(let j = 1; j < f.idx.length - 1; j++)
+      [P[f.idx[0]], P[f.idx[j]], P[f.idx[j + 1]]].forEach(function(q){ pos[f.kind].push(q.x, q.y, q.z); });
+    group.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(f.idx.map(function(m){ return P[m]; })),
+      new THREE.LineBasicMaterial({color:COL.edge})));
+  });
+  ["F", "V"].forEach(function(kind){
+    if(!pos[kind].length) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos[kind], 3));
+    /* 뒤 절반(쌍대를 깎는 쪽)은 색을 바꿔 칠해야 '처음 면 / 깎아 생긴 면'이 이어진다 */
+    const col = (kind === "F") !== at.back ? ARCH_COL.F : ARCH_COL.V;
+    /* 두 색이 반투명으로 겹치면 회색으로 보여 헷갈린다 — 불투명하게, 모서리선이 묻히지 않게 면을 살짝 뒤로 */
+    group.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:col,
+      side:THREE.DoubleSide, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1})));
+  });
+  /* 깎기 전 모양을 연한 선으로 */
+  at.S.faces.forEach(function(f){
+    group.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(f.map(function(m){ return at.S.V[m].clone().multiplyScalar(k); })),
+      new THREE.LineBasicMaterial({color:0xc3cbe0, transparent:true, opacity:0.8})));
+  });
+  $("caption").textContent = archName();
+  $("tip").textContent = "끌어서 돌려 보세요 · 휠로 확대";
+}
+function paintArch(){
+  const names = ARCH_FAM[archKey].names, v = Math.round(archS*1000);
+  $("rArch").value = v;
+  $("vArch").textContent = archName();
+  document.querySelectorAll("#archStops button").forEach(function(b, i){ b.classList.toggle("on", v === i*250); });
+  const st = archStats(archAt(archS).sol);
+  const keys = Object.keys(st.types).sort(function(a, b){ return a - b; });
+  $("aShape").innerHTML = keys.map(function(n){
+    const t = st.types[n];
+    return (t.regular ? PNAME[n] : NAMES[n]) + " <b>" + t.count + "</b>개";
+  }).join("<br>");
+  $("aF").innerHTML = "<b>" + st.F + "</b>"; $("aE").innerHTML = "<b>" + st.E + "</b>"; $("aV").innerHTML = "<b>" + st.V + "</b>";
+  const allReg = keys.every(function(n){ return st.types[n].regular; }) && st.sameEdge;
+  const confTxt = st.conf.split("·").map(Number);
+  const confCnt = {};
+  confTxt.forEach(function(n){ confCnt[n] = (confCnt[n] || 0) + 1; });
+  const confSay = Object.keys(confCnt).sort(function(a, b){ return a - b; })
+    .map(function(n){ return PNAME[n] + " " + confCnt[n] + "개"; }).join(", ");
+  let html;
+  if(v % 250 === 0 && allReg && st.uniform && keys.length === 1){
+    html = '<div class="fb ok">⭕ <b>' + names[v/250] + '</b> — 정다면체예요. 꼭짓점마다 ' + confSay + '가 모여요.' +
+      (archKey === "tetra" && v === 500 ? '<br>정사면체의 꼭짓점을 모서리 가운데까지 깎았더니 <b>정팔면체</b>가 나왔어요!' : '') + '</div>';
+  }else if(v % 250 === 0 && allReg && st.uniform){
+    const nm = names[v/250];
+    html = '<div class="fb ok">🎉 <b>' + nm + '</b> — 준정다면체예요! 면은 ' + keys.map(function(n){ return PNAME[n]; }).join("과 ") +
+      ', 모든 꼭짓점에 <b>' + confSay + '</b>(꼭짓점 배열 ' + st.conf + ')가 똑같이 모여요.' +
+      (nm === "깎은 정이십면체" ? '<br>⚽ 축구공 모양이에요.' : '') + '</div>';
+    markArchFound(nm);
+  }else{
+    const bad = keys.filter(function(n){ return !st.types[n].regular; }).map(function(n){ return NAMES[n]; });
+    html = '<div class="fb info">아직 준정다면체가 아니에요. ' +
+      (bad.length ? '<b>' + bad.join("·") + '</b>의 변의 길이가 서로 달라서 정다각형이 아니거든요. ' : '') +
+      '아래 단추나 슬라이더로 모든 면이 정다각형이 되는 곳을 찾아보세요.</div>';
+  }
+  $("archFb").innerHTML = html;
+}
+function markArchFound(nm){
+  if(archFound[nm]) return;
+  archFound[nm] = 1;
+  const span = document.querySelector('#archFound span[data-n="' + nm + '"]');
+  if(span) span.classList.add("on");
+  $("archCnt").textContent = Object.keys(archFound).length + " / 13";
+  if(window.MKSCORE){
+    MKSCORE.once("arch" + nm, 5, nm + " 만나기");
+    if(Object.keys(archFound).length === 13) MKSCORE.once("archAll", 10, "준정다면체 13가지 모두 만나기");
+  }
+}
+function drawArchStops(){
+  const box = $("archStops");
+  box.innerHTML = "";
+  ARCH_FAM[archKey].names.forEach(function(nm, i){
+    const b = document.createElement("button");
+    b.className = "btn sm"; b.textContent = nm;
+    b.addEventListener("click", function(){ playArch(i/4, 900); });
+    box.appendChild(b);
+  });
+}
+function stopArch(){ if(archAnim){ cancelAnimationFrame(archAnim); archAnim = null; } clearTimeout(archWait); clearArch6(); }
+let archWait = null;
+function playArch(to, dur, done){
+  stopArch();
+  const from = archS, t0 = performance.now(), D = dur || 1;
+  (function step(now){
+    const u = Math.max(0, Math.min(1, (now - t0)/D));
+    archS = u >= 1 ? to : from + (to - from)*(u < 0.5 ? 2*u*u : 1 - 2*(1 - u)*(1 - u));
+    archAnim = u < 1 ? requestAnimationFrame(step) : null;
+    paintArch();
+    if(tab === "arch") rebuild();
+    if(u >= 1 && done) done();
+  })(t0);
+}
+$("rArch").addEventListener("input", function(e){
+  stopArch();
+  let v = +e.target.value;
+  const near = Math.round(v/250)*250;
+  if(Math.abs(v - near) <= 15) v = near;                /* 정다면체·준정다면체 자리에 붙는다 */
+  archS = v/1000;
+  paintArch(); rebuild();
+});
+/* 천천히 깎기: 다음 자리까지 깎고 잠깐 멈춰 이름을 보여 준 뒤 이어 간다 */
+function playArchChain(){
+  const next = Math.floor(archS*4 + 1e-6) + 1;
+  if(next > 4) return;
+  playArch(next/4, 2600, function(){ archWait = setTimeout(playArchChain, 1600); });
+}
+$("btnArchPlay").addEventListener("click", function(){
+  if(archS >= 1){ archS = 0; paintArch(); rebuild(); }
+  playArchChain();
+});
+$("btnArchBack").addEventListener("click", function(){ stopArch(); archS = 0; paintArch(); rebuild(); });
+document.querySelectorAll("#archFam button").forEach(function(b){
+  b.addEventListener("click", function(){
+    stopArch();
+    document.querySelectorAll("#archFam button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    archKey = b.dataset.a; archS = 0;
+    drawArchStops(); paintArch(); rebuild();
+  });
+});
+
+
+/* ---------- ⑤ 나머지 6가지: 깎기만으로는 안 나오는 준정다면체 ----------
+   꼭짓점 좌표는 널리 알려진 식(φ = 황금비, t = 트리보나치 상수, ξ³ − 2ξ = φ 의 실근)으로 만든다.
+   면은 '가까운 세 점이 이루는 평면 중 모든 점이 한쪽에 있는 것'으로 찾는다(점이 120개라 가까운 점만 본다).
+   만드는 모습: 면을 종류(처음 정다면체 자리 → 다른 정다면체 자리 → 틈)별로 바깥에서 날아와 붙게 한다. */
+const PHI = (1 + Math.sqrt(5))/2, RT2 = Math.SQRT2;
+const EVEN3 = [[0, 1, 2], [1, 2, 0], [2, 0, 1]], ODD3 = [[0, 2, 1], [2, 1, 0], [1, 0, 2]];
+function orbit3(bases, perms, signOk){
+  const out = [], seen = {};
+  bases.forEach(function(b){ perms.forEach(function(pm){
+    for(let m = 0; m < 8; m++){
+      const sg = [0, 1, 2].map(function(i){ return (m >> i) & 1 ? -1 : 1; });
+      if(signOk && !signOk(sg)) continue;
+      const v = pm.map(function(j, i){ return b[j]*sg[i]; });
+      const k = v.map(function(x){ return x.toFixed(6); }).join(",");
+      if(!seen[k]){ seen[k] = 1; out.push(v); }
+    }
+  }); });
+  return out;
+}
+const plusEven = function(sg){ return sg.filter(function(s){ return s > 0; }).length % 2 === 0; };
+const plusOdd  = function(sg){ return !plusEven(sg); };
+function rootOf(f, df, x){ for(let i = 0; i < 60; i++) x -= f(x)/df(x); return x; }
+const TRIB = rootOf(function(t){ return t*t*t - t*t - t - 1; }, function(t){ return 3*t*t - 2*t - 1; }, 1.8);
+const XI = rootOf(function(x){ return x*x*x - 2*x - PHI; }, function(x){ return 3*x*x - 2; }, 1.7);
+const SA = XI - 1/XI, SB = XI*PHI + PHI*PHI + PHI/XI;
+/* 면 법선 판별: 정육면체 면 자리(축 방향), 정팔면체 면 자리(대각선), 정이십면체 면 자리(정십이면체 꼭짓점 방향) */
+const ICO_FACE_DIRS = (function(){
+  const d = [];
+  [1, -1].forEach(function(a){ [1, -1].forEach(function(b){ [1, -1].forEach(function(c){ d.push([a, b, c]); }); }); });
+  EVEN3.forEach(function(pm){ [1, -1].forEach(function(a){ [1, -1].forEach(function(b){
+    const v = [0, a/PHI, b*PHI]; d.push(pm.map(function(j){ return v[j]; }));
+  }); }); });
+  return d.map(function(v){ return new THREE.Vector3(v[0], v[1], v[2]).normalize(); });
+})();
+const onAxis = function(n){ return Math.max(Math.abs(n.x), Math.abs(n.y), Math.abs(n.z)) > 0.9999; };
+const onDiag = function(n){ return Math.abs(Math.abs(n.x) - Math.abs(n.y)) < 1e-6 && Math.abs(Math.abs(n.y) - Math.abs(n.z)) < 1e-6; };
+const onIco  = function(n){ return ICO_FACE_DIRS.some(function(d){ return d.dot(n) > 0.9999; }); };
+const ARCH6 = {
+  rhco:{name:"마름모육팔면체", pts:function(){ return orbit3([[1, 1, 1 + RT2]], EVEN3.concat(ODD3)); },
+    how:"정육면체의 여섯 면을 바깥으로 똑같이 밀어내고, 벌어진 틈을 정사각형과 정삼각형으로 메운 모양이에요.",
+    groups:[{s:4, t:onAxis, l:"정육면체 자리의 정사각형"}, {s:3, l:"꼭짓점 자리의 정삼각형"}, {s:4, l:"모서리 자리의 정사각형"}]},
+  trco:{name:"깎은 육팔면체", pts:function(){ return orbit3([[1, 1 + RT2, 1 + 2*RT2]], EVEN3.concat(ODD3)); },
+    how:"육팔면체의 꼭짓점을 깎은 모양이라 이런 이름이 붙었어요(그대로 깎으면 직사각형이 생겨 조금 다듬어야 해요).",
+    groups:[{s:8, l:"정육면체 자리의 정팔각형"}, {s:6, l:"정팔면체 자리의 정육각형"}, {s:4, l:"모서리 자리의 정사각형"}]},
+  snco:{name:"다듬은 정육면체", pts:function(){ return orbit3([[1, 1/TRIB, TRIB]], EVEN3, plusEven).concat(orbit3([[1, 1/TRIB, TRIB]], ODD3, plusOdd)); },
+    how:"정육면체의 면을 바깥으로 밀어내면서 <b>살짝 돌리고</b>, 틈을 정삼각형으로 메운 모양이에요. 돌리는 방향에 따라 거울에 비친 두 모양이 있어요.",
+    groups:[{s:4, l:"정육면체 자리의 정사각형(살짝 돌아가 있어요)"}, {s:3, t:onDiag, l:"정팔면체 자리의 정삼각형"}, {s:3, l:"틈을 메우는 정삼각형"}]},
+  rid: {name:"마름모십이이십면체", pts:function(){ return orbit3([[1, 1, PHI*PHI*PHI], [PHI*PHI, PHI, 2*PHI], [2 + PHI, 0, PHI*PHI]], EVEN3); },
+    how:"정십이면체의 열두 면을 바깥으로 똑같이 밀어내고, 벌어진 틈을 정사각형과 정삼각형으로 메운 모양이에요.",
+    groups:[{s:5, l:"정십이면체 자리의 정오각형"}, {s:3, l:"정이십면체 자리의 정삼각형"}, {s:4, l:"모서리 자리의 정사각형"}]},
+  tid: {name:"깎은 십이이십면체", pts:function(){ return orbit3([[1/PHI, 1/PHI, 3 + PHI], [2/PHI, PHI, 1 + 2*PHI], [1/PHI, PHI*PHI, -1 + 3*PHI], [-1 + 2*PHI, 2, 2 + PHI], [PHI, 3, 2*PHI]], EVEN3); },
+    how:"십이이십면체의 꼭짓점을 깎은 모양이라 이런 이름이 붙었어요. 준정다면체 가운데 꼭짓점(120개)과 모서리가 가장 많아요.",
+    groups:[{s:10, l:"정십이면체 자리의 정십각형"}, {s:6, l:"정이십면체 자리의 정육각형"}, {s:4, l:"모서리 자리의 정사각형"}]},
+  snd: {name:"다듬은 정십이면체", pts:function(){
+      const a = SA, b = SB, p = PHI;
+      return orbit3([[2*a, 2, 2*b], [a + b/p + p, -a*p + b + 1/p, a/p + b*p - 1], [a + b/p - p, a*p - b + 1/p, a/p + b*p + 1],
+                     [-a/p + b*p + 1, -a + b/p - p, a*p + b - 1/p], [-a/p + b*p - 1, a - b/p - p, a*p + b + 1/p]], EVEN3, plusEven); },
+    how:"정십이면체의 면을 밀어내면서 <b>살짝 돌리고</b>, 틈을 정삼각형으로 메운 모양이에요. 준정다면체 가운데 면(92개)이 가장 많고, 거울에 비친 두 모양이 있어요.",
+    groups:[{s:5, l:"정십이면체 자리의 정오각형(살짝 돌아가 있어요)"}, {s:3, t:onIco, l:"정이십면체 자리의 정삼각형"}, {s:3, l:"틈을 메우는 정삼각형"}]}
+};
+const SIDE_COL = {3:0xf5b56b, 4:0x9fc4f0, 5:0x7cc7a4, 6:0xc9a7eb, 8:0xf28b82, 10:0xf6d36b};
+const arch6Cache = {};
+function arch6Of(key){
+  if(arch6Cache[key]) return arch6Cache[key];
+  const V = ARCH6[key].pts().map(function(p){ return new THREE.Vector3(p[0], p[1], p[2]); });
+  let e = Infinity, r = 0;
+  V.forEach(function(v, i){ r = Math.max(r, v.length()); for(let j = i + 1; j < V.length; j++) e = Math.min(e, v.distanceTo(V[j])); });
+  const nb = V.map(function(v, i){ return V.map(function(w, j){ return j; }).filter(function(j){ return j !== i && v.distanceTo(V[j]) < 3.3*e; }); });
+  const seen = {}, faces = [];
+  for(let i = 0; i < V.length; i++) nb[i].forEach(function(j){ if(j < i) return; nb[i].forEach(function(k){
+    if(k <= j || nb[j].indexOf(k) < 0) return;
+    const n = new THREE.Vector3().subVectors(V[j], V[i]).cross(new THREE.Vector3().subVectors(V[k], V[i]));
+    if(n.length() < 1e-9) return;
+    n.normalize();
+    const d = n.dot(V[i]);
+    let pos = 0, neg = 0;
+    const on = [];
+    V.forEach(function(v, m){ const s = n.dot(v) - d; if(s > 1e-7) pos++; else if(s < -1e-7) neg++; else on.push(m); });
+    if(pos && neg) return;
+    if(pos) n.negate();
+    const key2 = on.join(",");
+    if(seen[key2]) return;
+    seen[key2] = 1;
+    faces.push({idx:sortAround(V, on, n), n:n, kind:"F"});
+  }); });
+  /* 면을 차례(groups)로 나눈다 — 앞 차례에 안 든 같은 모양 면이 다음 차례로 */
+  const used = {};
+  const groups = ARCH6[key].groups.map(function(g){
+    const fs = faces.filter(function(f, fi){
+      if(used[fi] || f.idx.length !== g.s || (g.t && !g.t(f.n))) return false;
+      return (used[fi] = true);
+    });
+    return {label:g.l, faces:fs};
+  });
+  /* 같은 모양 면이 두 차례로 나뉘면(정사각형 자리 둘, 정삼각형 자리 둘) 뒤 차례를 옅은 색으로 — 자리가 다르다는 게 보이게 */
+  const LIGHT = {3:0xfbe0bf, 4:0xd3e5fa}, met = {};
+  groups.forEach(function(g){
+    const n = g.faces.length ? g.faces[0].idx.length : 0;
+    g.col = met[n] ? (LIGHT[n] || SIDE_COL[n]) : SIDE_COL[n];
+    met[n] = 1;
+    g.faces.forEach(function(f){ f.col = g.col; });
+  });
+  const k = 2.5/r;
+  return (arch6Cache[key] = {P:V.map(function(v){ return v.clone().multiplyScalar(k); }), faces:faces, groups:groups});
+}
+let archExtra = null, a6Anim = null, a6T0 = 0, a6Objs = [];
+const A6_FLY = 0.55, A6_GAP = 1.1;
+function a6Times(){                               /* 차례마다 면이 하나씩(많으면 빠르게) 날아와 붙는다 */
+  const sol = arch6Of(archExtra), out = [];
+  let t = 0.2;
+  sol.groups.forEach(function(g){
+    const step = Math.min(0.12, 1.6/Math.max(1, g.faces.length));
+    g.faces.forEach(function(f, i){ out.push({f:f, start:t + i*step}); });
+    t += g.faces.length*step + A6_FLY + A6_GAP;
+  });
+  return {list:out, end:t};
+}
+function buildArch6(){
+  clearGroup();
+  a6Objs = [];
+  const sol = arch6Of(archExtra), P = sol.P;
+  sol.faces.forEach(function(f){
+    const c = new THREE.Vector3();
+    f.idx.forEach(function(m){ c.add(P[m]); }); c.multiplyScalar(1/f.idx.length);
+    const loc = f.idx.map(function(m){ return P[m].clone().sub(c); });
+    const pos = [];
+    for(let j = 1; j < loc.length - 1; j++) [loc[0], loc[j], loc[j + 1]].forEach(function(q){ pos.push(q.x, q.y, q.z); });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    const holder = new THREE.Group();
+    holder.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:f.col || SIDE_COL[f.idx.length] || 0xcccccc, side:THREE.DoubleSide,
+      polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1})));
+    holder.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(loc), new THREE.LineBasicMaterial({color:COL.edge})));
+    holder.position.copy(c);
+    group.add(holder);
+    a6Objs.push({f:f, obj:holder, c:c});
+  });
+  $("caption").textContent = ARCH6[archExtra].name;
+  $("tip").textContent = "끌어서 돌려 보세요 · 휠로 확대";
+  if(!a6Anim) a6Tick();                           /* 만드는 중이면 그 흐름이 이어서 그린다(두 줄로 돌지 않게) */
+}
+function a6Tick(){
+  if(!archExtra) return;
+  const playing = !!a6Anim, t = (performance.now() - a6T0)/1000;
+  const plan = playing ? a6Times() : null, startOf = new Map();
+  if(plan) plan.list.forEach(function(it){ startOf.set(it.f, it.start); });
+  a6Objs.forEach(function(o){
+    let u = 1;
+    if(playing) u = Math.max(0, Math.min(1, (t - startOf.get(o.f))/A6_FLY));
+    const e = 1 - (1 - u)*(1 - u)*(1 - u);
+    o.obj.visible = u > 0;
+    o.obj.position.copy(o.c).multiplyScalar(1 + 1.4*(1 - e));    /* 바깥에서 제자리로 */
+    o.obj.scale.setScalar(Math.max(1e-3, 0.35 + 0.65*e));
+  });
+  if(playing){
+    const sol = arch6Of(archExtra);
+    let acc = 0.2, cur = 0;
+    sol.groups.forEach(function(g, gi){
+      const step = Math.min(0.12, 1.6/Math.max(1, g.faces.length));
+      if(t >= acc) cur = gi;
+      acc += g.faces.length*step + A6_FLY + A6_GAP;
+    });
+    const g = sol.groups[cur];
+    $("arch6Fb").innerHTML = '<div class="fb info">' + (cur + 1) + '. <span class="dot" style="background:' + hex(g.col) +
+      '"></span><b>' + g.label + ' ' + g.faces.length + '개</b></div>';
+    if(t > plan.end){ cancelAnimationFrame(a6Anim); a6Anim = null; paintArch6(); }
+    else a6Anim = requestAnimationFrame(a6Tick);
+  }
+}
+function paintArch6(){
+  const c = ARCH6[archExtra], sol = arch6Of(archExtra), st = archStats(sol);
+  const keys = Object.keys(st.types).sort(function(a, b){ return a - b; });
+  $("a6Tbl").hidden = false;
+  $("a6Shape").innerHTML = keys.map(function(n){
+    return '<span class="dot" style="background:' + hex(SIDE_COL[n]) + '"></span>' + PNAME[n] + " <b>" + st.types[n].count + "</b>개";
+  }).join("<br>");
+  $("a6F").innerHTML = "<b>" + st.F + "</b>"; $("a6E").innerHTML = "<b>" + st.E + "</b>"; $("a6V").innerHTML = "<b>" + st.V + "</b>";
+  $("a6Conf").innerHTML = "<b>" + st.conf + "</b>";
+  $("arch6Fb").innerHTML = '<div class="fb ok">🎉 <b>' + c.name + '</b> — ' + c.how + '<br>' +
+    sol.groups.map(function(g){ return '<span class="dot" style="background:' + hex(g.col) + '"></span>' + g.label + ' ' + g.faces.length + '개'; }).join(" · ") + '</div>';
+  markArchFound(c.name);
+}
+function clearArch6(){
+  if(a6Anim){ cancelAnimationFrame(a6Anim); a6Anim = null; }
+  if(!archExtra) return;
+  archExtra = null;
+  $("pArch").classList.remove("a6-on");
+  document.querySelectorAll("#arch6Btns button").forEach(function(x){ x.classList.remove("on"); });
+}
+document.querySelectorAll("#arch6Btns button").forEach(function(b){
+  b.addEventListener("click", function(){
+    stopArch();
+    if(a6Anim){ cancelAnimationFrame(a6Anim); a6Anim = null; }
+    document.querySelectorAll("#arch6Btns button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    archExtra = b.dataset.x;
+    $("pArch").classList.add("a6-on");
+    $("btnArch6Play").disabled = false;
+    rebuild(); paintArch6();
+  });
+});
+$("btnArch6Play").addEventListener("click", function(){
+  if(!archExtra) return;
+  if(a6Anim) cancelAnimationFrame(a6Anim);
+  a6T0 = performance.now();
+  a6Anim = requestAnimationFrame(a6Tick);
+});
+
+/* ============================================================
    탭 / 시작
    ============================================================ */
 document.querySelectorAll("header nav button").forEach(function(b){
@@ -1014,6 +1938,12 @@ document.querySelectorAll("header nav button").forEach(function(b){
     $("pCount").classList.toggle("hidden", tab !== "count");
     $("pPlato").classList.toggle("hidden", tab !== "plato");
     $("pWhy")  .classList.toggle("hidden", tab !== "why");
+    $("pArch") .classList.toggle("hidden", tab !== "arch");
+    if(tab !== "arch") stopArch();
+    if(cmp && tab !== "count"){                 /* 나란히 보기는 ② 탭에서만 — 카메라 거리도 되돌린다 */
+      cmpRestoreView(); cmp = false; $("cmpBox").hidden = true;
+      document.querySelectorAll("#cmpBtns button").forEach(function(x){ x.classList.remove("on"); });
+    }
     if(tab === "why") rot.ph = 0.8;           /* 펼친 모양이 잘 보이게 위에서 내려다본다 */
     else group.position.y = 0;
     rebuild();
@@ -1022,7 +1952,12 @@ document.querySelectorAll("header nav button").forEach(function(b){
 
 function render(){
   placeCamera();
-  group.rotation.y += 0.0016;                 /* 천천히 도는 느낌 */
+  if(tab === "count" && cmp){                 /* 나란히: 셋이 각자 제자리에서 돈다 */
+    group.rotation.y = 0;
+    cmpSubs.forEach(function(sub){ sub.rotation.y += 0.004; });
+    cmpTick();
+  }else group.rotation.y += 0.0016;           /* 천천히 도는 느낌 */
+  cmpLabelPos();
   renderer.render(scene, camera);
   requestAnimationFrame(render);
 }
@@ -1033,6 +1968,7 @@ function boot(){
   paintPlato();
   paintNet();
   paintWhy();
+  drawArchStops(); paintArch();
   nextFind();                                 /* 데이터 먼저 (pitfalls #16) */
   tab = "find";
   rebuild();
